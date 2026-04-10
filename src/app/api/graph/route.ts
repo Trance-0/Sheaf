@@ -7,16 +7,27 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const daysParam = searchParams.get("days");
   const days = daysParam ? parseInt(daysParam, 10) : 30;
+  // kind: "all" (default — money view), "news" (≥2 entities), "job" (single agency entity)
+  const kind = (searchParams.get("kind") ?? "all") as "all" | "news" | "job";
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
-  const events = await prisma.event.findMany({
+  const rawEvents = await prisma.event.findMany({
     where: { date: { gte: cutoffDate } },
     include: {
       entities: { include: { entity: true } },
       articles: true,
     },
+  });
+
+  // Discriminator (schema-free for now): news events link ≥2 entities;
+  // job events are single-entity postings tied to an agency. This will be
+  // replaced with an explicit `Event.category` column in a later migration.
+  const events = rawEvents.filter(ev => {
+    if (kind === "news") return ev.entities.length >= 2;
+    if (kind === "job") return ev.entities.length === 1 && ev.entities[0].entity.type === "agency";
+    return true;
   });
 
   const nodesMap = new Map<string, any>();

@@ -19,10 +19,12 @@ export default function GraphCanvas({
   onNodeClick,
   onEdgeClick,
   timeFilter,
+  kind = "all",
 }: {
   onNodeClick: (id: string) => void;
   onEdgeClick: (source: string, target: string) => void;
   timeFilter: number;
+  kind?: "all" | "news" | "job";
 }) {
   const [graph, setGraph] = useState<Graph | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -36,7 +38,7 @@ export default function GraphCanvas({
   }, []);
 
   useEffect(() => {
-    fetch(`/api/graph?days=${timeFilter}`)
+    fetch(`/api/graph?days=${timeFilter}&kind=${kind}`)
       .then(res => res.json())
       .then(data => {
         const g = new Graph();
@@ -66,7 +68,7 @@ export default function GraphCanvas({
         setGraph(g);
       })
       .catch(console.error);
-  }, [timeFilter]);
+  }, [timeFilter, kind]);
 
   if (!graph) return null;
 

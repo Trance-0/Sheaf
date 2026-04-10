@@ -48,3 +48,60 @@ export async function GET(req: Request) {
     })),
   });
 }
+
+// PATCH /api/node?id=X — update editable entity fields (homepage, jobPortal, description)
+export async function PATCH(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id")?.toLowerCase();
+
+  if (!id) {
+    return NextResponse.json({ error: "id query param required" }, { status: 400 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
+  }
+
+  const { homepage, jobPortal, description } = (body ?? {}) as {
+    homepage?: string | null;
+    jobPortal?: string | null;
+    description?: string | null;
+  };
+
+  // Normalize empty strings to null so clearing a field actually clears it.
+  const data: Record<string, string | null> = {};
+  if (homepage !== undefined) data.homepage = homepage?.trim() ? homepage.trim() : null;
+  if (jobPortal !== undefined) data.jobPortal = jobPortal?.trim() ? jobPortal.trim() : null;
+  if (description !== undefined) data.description = description?.trim() ? description.trim() : null;
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "no editable fields supplied" }, { status: 400 });
+  }
+
+  // Validate URL fields — reject anything that isn't http(s).
+  for (const key of ["homepage", "jobPortal"] as const) {
+    const v = data[key];
+    if (typeof v === "string") {
+      try {
+        const u = new URL(v);
+        if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("bad protocol");
+      } catch {
+        return NextResponse.json({ error: `${key} must be a valid http(s) URL` }, { status: 400 });
+      }
+    }
+  }
+
+  try {
+    const updated = await prisma.entity.update({
+      where: { id },
+      data,
+      select: { id: true, name: true, homepage: true, jobPortal: true, description: true },
+    });
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Entity not found" }, { status: 404 });
+  }
+}

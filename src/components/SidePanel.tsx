@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Calendar } from "lucide-react";
+import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Calendar, Pencil, Check, Loader2 } from "lucide-react";
 
 interface EventData {
   id: string;
@@ -36,10 +36,20 @@ export default function SidePanel({
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Inline-edit state for node view
+  const [editing, setEditing] = useState(false);
+  const [editHomepage, setEditHomepage] = useState("");
+  const [editJobPortal, setEditJobPortal] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   useEffect(() => {
     setNodeData(null);
     setEdgeEvents([]);
     setExpandedEvent(null);
+    setEditing(false);
+    setSaveError(null);
 
     if (selectedNode) {
       setLoading(true);
@@ -57,6 +67,53 @@ export default function SidePanel({
         .finally(() => setLoading(false));
     }
   }, [selectedNode, selectedEdge]);
+
+  const startEdit = () => {
+    if (!nodeData) return;
+    setEditHomepage(nodeData.homepage ?? "");
+    setEditJobPortal(nodeData.jobPortal ?? "");
+    setEditDescription(nodeData.description ?? "");
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setSaveError(null);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedNode) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homepage: editHomepage,
+          jobPortal: editJobPortal,
+          description: editDescription,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Save failed (${res.status})`);
+      }
+      const updated = await res.json();
+      setNodeData(prev => prev ? {
+        ...prev,
+        homepage: updated.homepage,
+        jobPortal: updated.jobPortal,
+        description: updated.description,
+      } : prev);
+      setEditing(false);
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (!selectedNode && !selectedEdge) return null;
 
@@ -80,35 +137,107 @@ export default function SidePanel({
         {/* ===== NODE VIEW ===== */}
         {selectedNode && nodeData && (
           <>
-            {/* Type badge */}
-            <span className="inline-flex items-center self-start px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wide bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400">
-              {nodeData.type}
-            </span>
-
-            {/* Description */}
-            {nodeData.description && (
-              <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{nodeData.description}</p>
-            )}
-
-            {/* Links: Homepage + Job Portal */}
-            <div className="flex flex-col gap-2">
-              {nodeData.homepage && (
-                <a href={nodeData.homepage} target="_blank" rel="noopener noreferrer"
-                   className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200">
-                  <Globe size={14} className="text-blue-500 flex-shrink-0" />
-                  <span className="truncate">{nodeData.homepage}</span>
-                  <ExternalLink size={12} className="text-gray-400 ml-auto flex-shrink-0" />
-                </a>
-              )}
-              {nodeData.jobPortal && (
-                <a href={nodeData.jobPortal} target="_blank" rel="noopener noreferrer"
-                   className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200">
-                  <Briefcase size={14} className="text-emerald-500 flex-shrink-0" />
-                  <span className="truncate">Job Portal</span>
-                  <ExternalLink size={12} className="text-gray-400 ml-auto flex-shrink-0" />
-                </a>
+            {/* Type badge + edit toggle */}
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wide bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400">
+                {nodeData.type}
+              </span>
+              {!editing && (
+                <button
+                  onClick={startEdit}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                  title="Edit entity fields"
+                >
+                  <Pencil size={12} /> Edit
+                </button>
               )}
             </div>
+
+            {editing ? (
+              /* EDIT FORM */
+              <div className="flex flex-col gap-3">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Description</span>
+                  <textarea
+                    value={editDescription}
+                    onChange={e => setEditDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Short description of the entity"
+                    className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Homepage URL</span>
+                  <input
+                    type="url"
+                    value={editHomepage}
+                    onChange={e => setEditHomepage(e.target.value)}
+                    placeholder="https://example.com"
+                    className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Job Portal URL</span>
+                  <input
+                    type="url"
+                    value={editJobPortal}
+                    onChange={e => setEditJobPortal(e.target.value)}
+                    placeholder="https://example.com/careers"
+                    className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </label>
+                {saveError && (
+                  <p className="text-xs text-red-500 dark:text-red-400">{saveError}</p>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={saveEdit}
+                    disabled={saving}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+                  >
+                    {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    disabled={saving}
+                    className="px-3 py-1.5 rounded-md text-sm text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Description */}
+                {nodeData.description && (
+                  <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{nodeData.description}</p>
+                )}
+
+                {/* Links: Homepage + Job Portal */}
+                <div className="flex flex-col gap-2">
+                  {nodeData.homepage && (
+                    <a href={nodeData.homepage} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200">
+                      <Globe size={14} className="text-blue-500 flex-shrink-0" />
+                      <span className="truncate">{nodeData.homepage}</span>
+                      <ExternalLink size={12} className="text-gray-400 ml-auto flex-shrink-0" />
+                    </a>
+                  )}
+                  {nodeData.jobPortal && (
+                    <a href={nodeData.jobPortal} target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200">
+                      <Briefcase size={14} className="text-emerald-500 flex-shrink-0" />
+                      <span className="truncate">Job Portal</span>
+                      <ExternalLink size={12} className="text-gray-400 ml-auto flex-shrink-0" />
+                    </a>
+                  )}
+                  {!nodeData.description && !nodeData.homepage && !nodeData.jobPortal && (
+                    <p className="text-xs text-gray-400 italic">No description, homepage, or job portal set. Click Edit to add.</p>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Recent events for this entity */}
             {nodeData.recentEvents.length > 0 && (
