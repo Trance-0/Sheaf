@@ -24,6 +24,5 @@ Always finish `> Urgent` tasks first if exists.
 PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK 
 
 ## Current Tasks
-- [ ] Connect `GraphCanvas.tsx` to live backend data (Postgres)
 - [ ] Setup Python Ollama Cron scripts for automated news clustering
 - [ ] Enable robust filtering by agencies for the 'Career' job tracking tab
