@@ -14,17 +14,17 @@ const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"money" | "career">("money");
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<{ source: string; target: string } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [timeFilter, setTimeFilter] = useState<number>(30); // Default 30 days
+  const [timeFilter, setTimeFilter] = useState<number>(30);
 
   const handleNodeClick = (id: string) => {
     setSelectedNode(id);
     setSelectedEdge(null);
   };
 
-  const handleEdgeClick = (id: string) => {
-    setSelectedEdge(id);
+  const handleEdgeClick = (source: string, target: string) => {
+    setSelectedEdge({ source, target });
     setSelectedNode(null);
   };
 
@@ -53,13 +53,13 @@ export default function Home() {
         {/* Time Filter Dropdown */}
         <div className="relative group">
           <button className="glass-panel flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10 transition-all">
-            <Calendar size={16} /> 
+            <Calendar size={16} />
             {timeFilter === 5 ? "5 Days" : timeFilter === 35 ? "5 Weeks" : timeFilter === 150 ? "5 Months" : "All Time"}
           </button>
           <div className="absolute top-full mt-2 left-0 w-32 hidden group-hover:flex flex-col glass-panel rounded-lg overflow-hidden">
             {[5, 35, 150, 9999].map(days => (
-              <button 
-                key={days} 
+              <button
+                key={days}
                 onClick={() => setTimeFilter(days)}
                 className={`px-4 py-2 text-sm text-left hover:bg-slate-200 dark:hover:bg-slate-700 ${timeFilter === days ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-200'}`}
               >
@@ -69,7 +69,7 @@ export default function Home() {
           </div>
         </div>
 
-        <button 
+        <button
           className="glass-panel flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10 transition-all"
           onClick={() => setShowSettings(true)}
         >
@@ -79,20 +79,20 @@ export default function Home() {
 
       {/* Main Graph Area */}
       <section className="flex-1 relative">
-        <GraphCanvas 
-          onNodeClick={handleNodeClick} 
+        <GraphCanvas
+          onNodeClick={handleNodeClick}
           onEdgeClick={handleEdgeClick}
           timeFilter={timeFilter}
         />
       </section>
 
       {/* Side Panel for Detail Cards */}
-      <SidePanel 
-        selectedNode={selectedNode} 
+      <SidePanel
+        selectedNode={selectedNode}
         selectedEdge={selectedEdge}
-        onClose={closePanels} 
+        onClose={closePanels}
       />
-      
+
       {/* Settings Modal */}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </main>

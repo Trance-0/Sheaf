@@ -8,66 +8,88 @@ export async function GET(req: Request) {
   const daysParam = searchParams.get("days");
   const days = daysParam ? parseInt(daysParam, 10) : 30;
 
-  // Filter by date dynamically 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
   const events = await prisma.event.findMany({
-    where: {
-       date: { gte: cutoffDate }
-    },
+    where: { date: { gte: cutoffDate } },
     include: {
-      entities: { include: { entity: true } }
-    }
+      entities: { include: { entity: true } },
+      articles: true,
+    },
   });
 
-  const nodesMap = new Map();
-  const edges: any[] = [];
+  const nodesMap = new Map<string, any>();
+  // Key: "source||target" (sorted), Value: { events[], totalWeight }
+  const edgeBuckets = new Map<string, { source: string; target: string; events: any[]; totalWeight: number; impact: string }>();
 
-  events.forEach(event => {
-    const eventEntities = event.entities;
-    eventEntities.forEach(ee => {
-      // Normalize casing using toLowerCase internally to fight duplicates visual output
-      const cleanId = ee.entity.id.toLowerCase();
-      if (!nodesMap.has(cleanId)) {
-        nodesMap.set(cleanId, {
-          id: cleanId,
+  for (const event of events) {
+    const ees = event.entities;
+
+    // Build nodes from entities
+    for (const ee of ees) {
+      const id = ee.entity.id.toLowerCase();
+      if (!nodesMap.has(id)) {
+        nodesMap.set(id, {
+          id,
           label: ee.entity.name,
-          score: ee.impactScore5w || 1,
-          size: 15 // base size
+          homepage: ee.entity.homepage,
+          jobPortal: ee.entity.jobPortal,
+          score: ee.impactScore5w ?? 0,
+          size: 15,
         });
       } else {
-        nodesMap.get(cleanId).size += 5;
+        const existing = nodesMap.get(id)!;
+        existing.size += 3;
+        existing.score += (ee.impactScore5w ?? 0);
       }
-    });
-
-    if (event.title.includes("Glasswing") || event.title.includes("Glasswings")) {
-       eventEntities.forEach(ee => {
-          if (!ee.entity.name.toLowerCase().includes("anthropic")) {
-             edges.push({
-               id: event.id,
-               source: "anthropic",
-               target: ee.entity.id.toLowerCase(),
-               impact: "positive"
-             });
-          }
-       });
     }
 
-    for (let i = 0; i < eventEntities.length; i++) {
-       for (let j = i + 1; j < eventEntities.length; j++) {
-          edges.push({
-             id: event.id,
-             source: eventEntities[i].entity.id.toLowerCase(),
-             target: eventEntities[j].entity.id.toLowerCase(),
-             impact: (eventEntities[i].impactScore5w ?? 0) > 0 ? "positive" : "neutral"
-          });
-       }
+    // Build pairwise edges — each maps to this event
+    for (let i = 0; i < ees.length; i++) {
+      for (let j = i + 1; j < ees.length; j++) {
+        const a = ees[i].entity.id.toLowerCase();
+        const b = ees[j].entity.id.toLowerCase();
+        const [source, target] = [a, b].sort();
+        const key = `${source}||${target}`;
+
+        const weight = Math.abs(ees[i].impactScore5w ?? 1) + Math.abs(ees[j].impactScore5w ?? 1);
+        const impact = ((ees[i].impactScore5w ?? 0) + (ees[j].impactScore5w ?? 0)) > 0
+          ? "positive"
+          : ((ees[i].impactScore5w ?? 0) + (ees[j].impactScore5w ?? 0)) < 0
+            ? "negative"
+            : "neutral";
+
+        if (!edgeBuckets.has(key)) {
+          edgeBuckets.set(key, { source, target, events: [], totalWeight: 0, impact });
+        }
+
+        const bucket = edgeBuckets.get(key)!;
+        bucket.totalWeight += weight;
+        bucket.events.push({
+          id: event.id,
+          title: event.title,
+          date: event.date,
+          description: event.description,
+          articleCount: event.articles.length,
+        });
+      }
     }
-  });
+  }
+
+  // Build final edges array — one visual edge per entity-pair
+  const edges = Array.from(edgeBuckets.values()).map(b => ({
+    id: `${b.source}||${b.target}`,
+    source: b.source,
+    target: b.target,
+    weight: b.totalWeight,
+    impact: b.impact,
+    eventCount: b.events.length,
+    events: b.events,
+  }));
 
   return NextResponse.json({
     nodes: Array.from(nodesMap.values()),
-    edges
+    edges,
   });
 }

@@ -12,6 +12,8 @@ model Entity {
   name           String
   type           String
   description    String?
+  homepage       String?
+  jobPortal      String?
   interestWeight Float    @default(1.0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

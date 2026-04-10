@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl, useSigma, useRegisterEvents } from "@react-sigma/core";
 import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
@@ -15,23 +15,21 @@ function LayoutController() {
   return null;
 }
 
-export default function GraphCanvas({ 
-  onNodeClick, 
-  onEdgeClick, 
-  timeFilter 
-}: { 
+export default function GraphCanvas({
+  onNodeClick,
+  onEdgeClick,
+  timeFilter,
+}: {
   onNodeClick: (id: string) => void;
-  onEdgeClick: (id: string) => void;
+  onEdgeClick: (source: string, target: string) => void;
   timeFilter: number;
 }) {
   const [graph, setGraph] = useState<Graph | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
-    // Determine the current theme natively avoiding flash
     const checkTheme = () => setIsDarkMode(!document.body.classList.contains("light-theme"));
     checkTheme();
-    // Observe class changes gracefully
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
@@ -46,17 +44,23 @@ export default function GraphCanvas({
           g.addNode(n.id, {
             x: Math.random() * 100,
             y: Math.random() * 100,
-            size: n.size || 15,
+            size: Math.min(n.size || 15, 40),
             label: n.label || n.id,
             color: n.score > 0 ? "#10b981" : n.score < 0 ? "#ef4444" : "#9ca3af",
           });
         });
         data.edges.forEach((e: any) => {
-          if (!g.hasEdge(e.source, e.target)) {
-             g.addEdge(e.source, e.target, {
-               size: 3,
-               color: e.impact === "positive" ? "rgba(16, 185, 129, 0.6)" : e.impact === "negative" ? "rgba(239, 68, 68, 0.6)" : "rgba(156, 163, 175, 0.6)",
-             });
+          if (g.hasNode(e.source) && g.hasNode(e.target) && !g.hasEdge(e.id)) {
+            g.addEdgeWithKey(e.id, e.source, e.target, {
+              size: Math.min(2 + e.weight * 0.5, 10),
+              color:
+                e.impact === "positive"
+                  ? "rgba(16, 185, 129, 0.6)"
+                  : e.impact === "negative"
+                    ? "rgba(239, 68, 68, 0.6)"
+                    : "rgba(156, 163, 175, 0.6)",
+              label: `${e.eventCount} event(s)`,
+            });
           }
         });
         setGraph(g);
@@ -67,8 +71,8 @@ export default function GraphCanvas({
   if (!graph) return null;
 
   return (
-    <SigmaContainer 
-      graph={graph} 
+    <SigmaContainer
+      graph={graph}
       settings={{
         enableEdgeEvents: true,
         defaultNodeType: "circle",
@@ -83,8 +87,8 @@ export default function GraphCanvas({
     >
       <LayoutController />
       <EventsHandler onNodeClick={onNodeClick} onEdgeClick={onEdgeClick} />
-      
-      <ControlsContainer position={"bottom-right"} className="[&>button]:bg-white/10 [&>button]:border [&>button]:border-white/20 [&>button:hover]:bg-white/20 [&>button_svg]:invert-0">
+
+      <ControlsContainer position={"bottom-right"}>
         <ZoomControl />
         <FullScreenControl />
       </ControlsContainer>
@@ -92,12 +96,12 @@ export default function GraphCanvas({
   );
 }
 
-function EventsHandler({ 
+function EventsHandler({
   onNodeClick,
-  onEdgeClick 
-}: { 
+  onEdgeClick,
+}: {
   onNodeClick: (id: string) => void;
-  onEdgeClick: (id: string) => void;
+  onEdgeClick: (source: string, target: string) => void;
 }) {
   const registerEvents = useRegisterEvents();
   const sigma = useSigma();
@@ -109,7 +113,10 @@ function EventsHandler({
         onNodeClick(event.node);
       },
       clickEdge: (event) => {
-         onEdgeClick(event.edge);
+        const graph = sigma.getGraph();
+        const source = graph.source(event.edge);
+        const target = graph.target(event.edge);
+        onEdgeClick(source, target);
       },
       downNode: (e) => {
         setDraggedNode(e.node);
@@ -142,7 +149,7 @@ function EventsHandler({
 
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
-      
+
       return () => {
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
