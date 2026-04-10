@@ -1,0 +1,220 @@
+{
+  "entities": [
+    {"id": "anthropic", "name": "Anthropic", "type": "company", "homepage": "https://www.anthropic.com", "jobPortal": "https://www.anthropic.com/careers"},
+    {"id": "palantir", "name": "Palantir", "type": "company", "homepage": "https://www.palantir.com", "jobPortal": "https://www.palantir.com/careers/"},
+    {"id": "aws", "name": "Amazon Web Services", "type": "company", "homepage": "https://aws.amazon.com", "jobPortal": "https://www.amazon.jobs/en/teams/aws"},
+    {"id": "google", "name": "Google", "type": "company", "homepage": "https://cloud.google.com", "jobPortal": "https://www.google.com/about/careers/applications/"},
+    {"id": "microsoft", "name": "Microsoft", "type": "company", "homepage": "https://www.microsoft.com", "jobPortal": "https://careers.microsoft.com"},
+    {"id": "crowdstrike", "name": "CrowdStrike", "type": "company", "homepage": "https://www.crowdstrike.com", "jobPortal": "https://www.crowdstrike.com/careers/"},
+    {"id": "carahsoft", "name": "Carahsoft", "type": "company", "homepage": "https://www.carahsoft.com", "jobPortal": "https://www.carahsoft.com/about/careers"},
+    {"id": "linux-foundation", "name": "Linux Foundation", "type": "company", "homepage": "https://www.linuxfoundation.org", "jobPortal": "https://www.linuxfoundation.org/about/careers"},
+    {"id": "jpmorgan", "name": "JPMorgan Chase", "type": "company", "homepage": "https://www.jpmorganchase.com", "jobPortal": "https://careers.jpmorgan.com"},
+    {"id": "dod", "name": "U.S. Department of Defense", "type": "agency", "homepage": "https://www.defense.gov", "jobPortal": null},
+    {"id": "doe", "name": "U.S. Department of Energy", "type": "agency", "homepage": "https://www.energy.gov", "jobPortal": null},
+    {"id": "nnsa", "name": "National Nuclear Security Administration", "type": "agency", "homepage": "https://www.energy.gov/nnsa/national-nuclear-security-administration", "jobPortal": null},
+    {"id": "gsa", "name": "U.S. General Services Administration", "type": "agency", "homepage": "https://www.gsa.gov", "jobPortal": null},
+    {"id": "llnl", "name": "Lawrence Livermore National Laboratory", "type": "lab", "homepage": "https://www.llnl.gov", "jobPortal": "https://www.llnl.gov/join-our-team"}
+  ],
+  "events": [
+    {
+      "entity1": "anthropic",
+      "entity2": "palantir",
+      "title": "Claude deployed via Palantir AIP for U.S. defense and intelligence",
+      "url": "https://www.anthropic.com/news/palantir-aws",
+      "publishedAt": "2024-11-07",
+      "description": "Anthropic, Palantir and AWS announce a partnership bringing Claude 3 and 3.5 models into Palantir's AIP on IL6-accredited AWS infrastructure for U.S. intelligence and defense operations."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "palantir",
+      "title": "Palantir first partner to bring Claude to classified environments",
+      "url": "https://investors.palantir.com/news-details/2024/Anthropic-and-Palantir-Partner-to-Bring-Claude-AI-Models-to-AWS-for-U.S.-Government-Intelligence-and-Defense-Operations/",
+      "publishedAt": "2024-11-07",
+      "description": "Palantir announces it is the first industry partner to bring Claude models to classified U.S. government environments, marking a milestone in defense AI deployment."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "palantir",
+      "title": "Tech giants team up to sell Claude to defense customers",
+      "url": "https://techcrunch.com/2024/11/07/anthropic-teams-up-with-palantir-and-aws-to-sell-its-ai-to-defense-customers/",
+      "publishedAt": "2024-11-07",
+      "description": "TechCrunch reports Anthropic joined Palantir and AWS to sell Claude to defense customers, a notable shift for a safety-focused AI lab."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "nnsa",
+      "title": "Anthropic and NNSA red-team Claude for nuclear proliferation risk",
+      "url": "https://www.axios.com/2024/11/14/anthropic-claude-nuclear-information-safety",
+      "publishedAt": "2024-11-14",
+      "description": "Anthropic partners with the Department of Energy's NNSA to red-team Claude in a secure environment, assessing whether the model might disclose sensitive nuclear information."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "aws",
+      "title": "Claude on Amazon Bedrock approved for FedRAMP High and DoD IL4/5",
+      "url": "https://www.anthropic.com/news/claude-in-amazon-bedrock-fedramp-high",
+      "publishedAt": "2025-05-22",
+      "description": "Anthropic's Claude models become the first foundation models approved for FedRAMP High and DoD Impact Level 4/5 workloads in Amazon Bedrock's AWS GovCloud regions."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "dod",
+      "title": "Anthropic launches Claude Gov models for U.S. national security",
+      "url": "https://www.anthropic.com/news/claude-gov-models-for-u-s-national-security-customers",
+      "publishedAt": "2025-06-05",
+      "description": "Anthropic unveils a custom 'Claude Gov' family built exclusively for U.S. national security customers, already deployed in classified environments."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "dod",
+      "title": "Pentagon CDAO awards Anthropic $200M frontier AI agreement",
+      "url": "https://www.anthropic.com/news/anthropic-and-the-department-of-defense-to-advance-responsible-ai-in-defense-operations",
+      "publishedAt": "2025-07-14",
+      "description": "The DoD Chief Digital and Artificial Intelligence Office awards Anthropic a two-year prototype other transaction agreement with a $200M ceiling to develop frontier AI for national security missions."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "dod",
+      "title": "CDAO splits $600M among Anthropic, Google, and xAI for agentic AI",
+      "url": "https://breakingdefense.com/2025/07/anthropic-google-and-xai-win-200m-each-from-pentagon-ai-chief-for-agentic-ai/",
+      "publishedAt": "2025-07-14",
+      "description": "Breaking Defense reports the Pentagon's CDAO awarding $200M each to Anthropic, Google, and xAI to build agentic AI workflows across DoD mission areas."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "llnl",
+      "title": "Lawrence Livermore expands Claude for Enterprise lab-wide",
+      "url": "https://www.anthropic.com/news/lawrence-livermore-national-laboratory-expands-claude-for-enterprise-to-empower-scientists-and",
+      "publishedAt": "2025-07-16",
+      "description": "LLNL scales Claude for Enterprise to roughly 10,000 scientists and staff, supporting nuclear deterrence, energy, and materials science research."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "gsa",
+      "title": "GSA strikes OneGov deal delivering Claude to government for $1",
+      "url": "https://www.gsa.gov/about-us/newsroom/news-releases/gsa-strikes-onegov-deal-with-anthropic-08122025",
+      "publishedAt": "2025-08-12",
+      "description": "GSA announces an OneGov agreement offering Claude for Enterprise and Claude for Government to all three branches of the U.S. government for a nominal $1 fee."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "carahsoft",
+      "title": "Claude for Government added to Carahsoft GSA schedule",
+      "url": "https://www.anthropic.com/news/offering-expanded-claude-access-across-all-three-branches-of-government",
+      "publishedAt": "2025-08-12",
+      "description": "Anthropic expands federal access to Claude through reseller Carahsoft's Federal Supply Schedule, enabling rapid procurement across executive, legislative, and judicial branches."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "nnsa",
+      "title": "Anthropic and NNSA co-develop nuclear risk classifier",
+      "url": "https://www.anthropic.com/news/developing-nuclear-safeguards-for-ai-through-public-private-partnership",
+      "publishedAt": "2025-08-21",
+      "description": "Anthropic and the NNSA release a co-developed classifier that detects concerning nuclear-weapon queries in Claude traffic with 96% accuracy."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "google",
+      "title": "Claude on Google Cloud Vertex AI authorized for FedRAMP High and IL2",
+      "url": "https://www.anthropic.com/news/claude-on-google-cloud-fedramp-high",
+      "publishedAt": "2025-09-17",
+      "description": "Claude on Google Cloud Vertex AI achieves FedRAMP High and DoD IL2 authorization, opening broader federal agency and defense organization access."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "doe",
+      "title": "Anthropic joins DOE Genesis Mission across 17 national labs",
+      "url": "https://www.anthropic.com/news/genesis-mission-partnership",
+      "publishedAt": "2025-11-24",
+      "description": "Anthropic announces a multi-year partnership supporting the DOE Genesis Mission, giving researchers across all 17 national labs access to Claude and purpose-built scientific tools."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "doe",
+      "title": "DOE signs Genesis Mission collaboration with 24 organizations",
+      "url": "https://www.energy.gov/articles/energy-department-announces-collaboration-agreements-24-organizations-advance-genesis",
+      "publishedAt": "2025-11-24",
+      "description": "The Department of Energy announces Genesis Mission collaboration agreements with 24 organizations including Anthropic to accelerate AI-driven scientific discovery."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "dod",
+      "title": "Pentagon designates Anthropic a supply chain risk",
+      "url": "https://www.cnbc.com/2026/03/05/anthropic-pentagon-ai-claude-iran.html",
+      "publishedAt": "2026-03-05",
+      "description": "The DoD officially designates Anthropic a supply chain risk after the company refuses to drop restrictions on autonomous weapons and mass domestic surveillance."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "dod",
+      "title": "Anthropic sues Pentagon over supply chain risk label",
+      "url": "https://www.axios.com/2026/03/09/anthropic-sues-pentagon-supply-chain-risk-label",
+      "publishedAt": "2026-03-09",
+      "description": "Anthropic files suit against the Trump administration and Pentagon, challenging the unprecedented supply-chain-risk designation applied to an American AI company."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "palantir",
+      "title": "Palantir CEO confirms continued Claude use despite DoD blacklist",
+      "url": "https://www.cnbc.com/2026/03/12/karp-palantir-anthropic-claude-pentagon-blacklist.html",
+      "publishedAt": "2026-03-12",
+      "description": "Palantir CEO Alex Karp says Palantir's products remain integrated with Anthropic's Claude even as the Pentagon phases Anthropic out of defense workflows."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "crowdstrike",
+      "title": "CrowdStrike joins Project Glasswing as founding member",
+      "url": "https://www.crowdstrike.com/en-us/blog/crowdstrike-founding-member-anthropic-mythos-frontier-model-to-secure-ai/",
+      "publishedAt": "2026-04-07",
+      "description": "CrowdStrike announces its role as a founding member of Anthropic's Project Glasswing, using Claude Mythos Preview to secure AI runtimes and critical infrastructure."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "microsoft",
+      "title": "Microsoft joins Project Glasswing via Microsoft Foundry",
+      "url": "https://www.microsoft.com/en-us/msrc/blog/2026/04/strengthening-secure-software-global-scale-how-msrc-is-evolving-with-ai",
+      "publishedAt": "2026-04-07",
+      "description": "Microsoft MSRC announces joining Project Glasswing and enabling Claude Mythos Preview research access via Microsoft Foundry to identify and mitigate software risk."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "linux-foundation",
+      "title": "Linux Foundation partners on Project Glasswing for open source",
+      "url": "https://www.linuxfoundation.org/blog/project-glasswing-gives-maintainers-advanced-ai-to-secure-open-source",
+      "publishedAt": "2026-04-07",
+      "description": "The Linux Foundation joins Project Glasswing with Anthropic donating $2.5M to Alpha-Omega and OpenSSF to help maintainers use Claude Mythos Preview to secure open source code."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "jpmorgan",
+      "title": "JPMorgan Chase joins Glasswing coalition for financial cyber defense",
+      "url": "https://www.anthropic.com/glasswing#jpmorgan",
+      "publishedAt": "2026-04-07",
+      "description": "JPMorgan Chase is named a launch partner in Project Glasswing, using Claude Mythos Preview for defensive cybersecurity across critical financial infrastructure."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "aws",
+      "title": "AWS joins Project Glasswing to secure critical software",
+      "url": "https://www.anthropic.com/glasswing#aws",
+      "publishedAt": "2026-04-07",
+      "description": "Amazon Web Services signs on as a Project Glasswing launch partner, committing to use Claude Mythos Preview for defensive security work on critical software infrastructure."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "google",
+      "title": "Google joins Project Glasswing cybersecurity coalition",
+      "url": "https://www.anthropic.com/glasswing#google",
+      "publishedAt": "2026-04-07",
+      "description": "Google joins Anthropic's Project Glasswing as a launch partner to apply Claude Mythos Preview toward defending critical software systems from AI-powered attacks."
+    },
+    {
+      "entity1": "anthropic",
+      "entity2": "dod",
+      "title": "Anthropic loses appeals bid to block Pentagon blacklisting",
+      "url": "https://www.cnbc.com/2026/04/08/anthropic-pentagon-court-ruling-supply-chain-risk.html",
+      "publishedAt": "2026-04-08",
+      "description": "A federal appeals court in Washington denies Anthropic's request to temporarily block the DoD supply chain risk designation while the lawsuit continues."
+    }
+  ]
+}
