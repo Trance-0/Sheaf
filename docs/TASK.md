@@ -25,8 +25,8 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 
 ## Current Tasks
 
-> Urgent
-
 - [ ] Multi-file ingestion in the 'News' tab via embedded OpenClaw conversation protocol (deferred from v0.1.7). The filter-only News view has shipped; the upload/ingest side will be a client-side flow that hands files to an OpenClaw conversation that parses and inserts events using the same dedup protocol as `skills/news_crawl/update_news.ts`.
 - [ ] Move the `kind` discriminator off of "event has ≥2 entities" (tech debt from 0.1.7) onto an explicit `Event.category` column via `prisma db push`. Migrate existing rows: single-agency events → `job`, multi-entity events → `news`.
-
+- [ ] Embed job tracker as another tab in the node view instead of a separate sidebar.
+- [ ] Add financial details and other economic stats to the side bar of the node view for each entity. (You may need add additional data points for tracking the growth over time, make a simple stock price view(if present), free-cash flow, employee count, etc.)
+- [ ] Currently, the node size is not representing their capital size, add the node size factor setting to settings page, select from the following (capital size, free cash flow, employee count, etc.)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Calendar, Pencil, Check, Loader2 } from "lucide-react";
+import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Pencil, Check, Loader2 } from "lucide-react";
 
 interface EventData {
   id: string;
@@ -12,6 +12,18 @@ interface EventData {
   impactScores: { entity: string; s5d: number | null; s5w: number | null }[];
 }
 
+interface NodeRecentEvent {
+  eventId: string;
+  title: string;
+  date: string;
+  description: string | null;
+  articleCount: number;
+  primaryArticleUrl: string | null;
+  primaryArticleTitle: string | null;
+  primaryArticleProvider: string | null;
+  impact5w: number | null;
+}
+
 interface NodeData {
   id: string;
   name: string;
@@ -19,7 +31,7 @@ interface NodeData {
   description: string | null;
   homepage: string | null;
   jobPortal: string | null;
-  recentEvents: { eventId: string; title: string; date: string; articleCount: number; impact5w: number | null }[];
+  recentEvents: NodeRecentEvent[];
 }
 
 export default function SidePanel({
@@ -34,6 +46,10 @@ export default function SidePanel({
   const [nodeData, setNodeData] = useState<NodeData | null>(null);
   const [edgeEvents, setEdgeEvents] = useState<EventData[]>([]);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  // For the node view's recent-events list we want a two-step interaction:
+  // first click expands the card, second click (while expanded) opens the
+  // source article. Track the expanded one separately from edgeEvents.
+  const [expandedRecent, setExpandedRecent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Inline-edit state for node view
@@ -48,6 +64,7 @@ export default function SidePanel({
     setNodeData(null);
     setEdgeEvents([]);
     setExpandedEvent(null);
+    setExpandedRecent(null);
     setEditing(false);
     setSaveError(null);
 
@@ -239,18 +256,58 @@ export default function SidePanel({
               </>
             )}
 
-            {/* Recent events for this entity */}
+            {/* Recent events for this entity — first click expands, second
+                click on the title jumps to the primary article source. */}
             {nodeData.recentEvents.length > 0 && (
               <div className="mt-1">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Recent Events</h3>
                 <ul className="flex flex-col gap-1.5">
-                  {nodeData.recentEvents.map(ev => (
-                    <li key={ev.eventId} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-700 dark:text-gray-200">
-                      <Calendar size={12} className="text-gray-400 flex-shrink-0" />
-                      <span className="truncate flex-1">{ev.title}</span>
-                      <span className="text-xs text-gray-400 flex-shrink-0">{new Date(ev.date).toLocaleDateString()}</span>
-                    </li>
-                  ))}
+                  {nodeData.recentEvents.map(ev => {
+                    const isOpen = expandedRecent === ev.eventId;
+                    const handleTitleClick = () => {
+                      if (!isOpen) {
+                        setExpandedRecent(ev.eventId);
+                        return;
+                      }
+                      if (ev.primaryArticleUrl) {
+                        window.open(ev.primaryArticleUrl, "_blank", "noopener,noreferrer");
+                      }
+                    };
+                    return (
+                      <li key={ev.eventId} className="rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden bg-white/50 dark:bg-white/5">
+                        <button
+                          type="button"
+                          onClick={handleTitleClick}
+                          title={isOpen ? (ev.primaryArticleUrl ? "Click again to open source" : "No source URL attached") : "Click to expand"}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200"
+                        >
+                          {isOpen ? <ChevronDown size={12} className="text-gray-400 flex-shrink-0" /> : <ChevronRight size={12} className="text-gray-400 flex-shrink-0" />}
+                          <span className={`truncate flex-1 ${isOpen ? "underline decoration-dotted underline-offset-4" : ""}`}>{ev.title}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">{new Date(ev.date).toLocaleDateString()}</span>
+                        </button>
+                        {isOpen && (
+                          <div className="px-3 pb-3 pt-1 border-t border-slate-200 dark:border-white/10 bg-white/30 dark:bg-black/10">
+                            {ev.description ? (
+                              <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300 mb-2">{ev.description}</p>
+                            ) : (
+                              <p className="text-xs italic text-gray-400 mb-2">No description recorded for this event.</p>
+                            )}
+                            {ev.primaryArticleUrl ? (
+                              <div className="flex items-center gap-2 text-[0.7rem] text-gray-500 dark:text-gray-400">
+                                <Newspaper size={11} className="flex-shrink-0" />
+                                <span className="truncate flex-1">
+                                  Source: {ev.primaryArticleProvider || new URL(ev.primaryArticleUrl).hostname}
+                                </span>
+                                <span className="text-blue-500 dark:text-blue-400 font-medium">click title to open →</span>
+                              </div>
+                            ) : (
+                              <p className="text-[0.7rem] italic text-gray-400">No source article attached.</p>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}

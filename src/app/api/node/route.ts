@@ -18,7 +18,20 @@ export async function GET(req: Request) {
       aliases: true,
       snapshots: { orderBy: { date: 'desc' }, take: 1 },
       events: {
-        include: { event: { include: { _count: { select: { articles: true } } } } },
+        include: {
+          event: {
+            include: {
+              _count: { select: { articles: true } },
+              // Grab the newest article for the "click title to open source"
+              // shortcut in the SidePanel — we only need its URL + title.
+              articles: {
+                orderBy: { publishedAt: 'desc' },
+                take: 1,
+                select: { url: true, title: true, provider: true },
+              },
+            },
+          },
+        },
         orderBy: { event: { date: 'desc' } },
         take: 10,
       },
@@ -42,7 +55,11 @@ export async function GET(req: Request) {
       eventId: ee.event.id,
       title: ee.event.title,
       date: ee.event.date,
+      description: ee.event.description,
       articleCount: ee.event._count.articles,
+      primaryArticleUrl: ee.event.articles[0]?.url ?? null,
+      primaryArticleTitle: ee.event.articles[0]?.title ?? null,
+      primaryArticleProvider: ee.event.articles[0]?.provider ?? null,
       impact5d: ee.impactScore5d,
       impact5w: ee.impactScore5w,
     })),

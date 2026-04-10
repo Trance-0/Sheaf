@@ -5,7 +5,8 @@ import { useState } from "react";
 import SidePanel from "@/components/SidePanel";
 import SettingsPanel from "@/components/SettingsPanel";
 import CareerSidebar from "@/components/CareerSidebar";
-import { Settings, TrendingUp, Briefcase, Calendar, Newspaper } from "lucide-react";
+import TimeScaleBar from "@/components/TimeScaleBar";
+import { Settings, TrendingUp, Briefcase, Newspaper } from "lucide-react";
 
 const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
   ssr: false,
@@ -19,7 +20,9 @@ export default function Home() {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{ source: string; target: string } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [timeFilter, setTimeFilter] = useState<number>(30);
+  // Default to "All Time" so the user sees every seeded event on first load
+  // instead of the handful that fall inside a 30-day window.
+  const [timeFilter, setTimeFilter] = useState<number>(9999);
 
   // Map each tab to the graph `kind` filter consumed by /api/graph
   const graphKind: "all" | "news" | "job" =
@@ -63,31 +66,18 @@ export default function Home() {
           <Briefcase size={16} /> Career (My Time)
         </button>
 
-        {/* Time Filter Dropdown */}
-        <div className="relative group">
-          <button className="glass-panel flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10 transition-all">
-            <Calendar size={16} />
-            {timeFilter === 5 ? "5 Days" : timeFilter === 35 ? "5 Weeks" : timeFilter === 150 ? "5 Months" : "All Time"}
-          </button>
-          <div className="absolute top-full mt-2 left-0 w-32 hidden group-hover:flex flex-col glass-panel rounded-lg overflow-hidden">
-            {[5, 35, 150, 9999].map(days => (
-              <button
-                key={days}
-                onClick={() => setTimeFilter(days)}
-                className={`px-4 py-2 text-sm text-left hover:bg-slate-200 dark:hover:bg-slate-700 ${timeFilter === days ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-200'}`}
-              >
-                {days === 5 ? "5 Days" : days === 35 ? "5 Weeks" : days === 150 ? "5 Months" : "All Time"}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <button
           className="glass-panel flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10 transition-all"
           onClick={() => setShowSettings(true)}
         >
           <Settings size={16} /> Settings
         </button>
+      </div>
+
+      {/* Time scale bar — always live, pinned centered just below the tab
+          row so it doesn't collide with the buttons on narrower displays. */}
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+        <TimeScaleBar value={timeFilter} onChange={setTimeFilter} />
       </div>
 
       {/* Career sidebar (only in Career tab) */}

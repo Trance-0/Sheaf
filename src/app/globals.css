@@ -49,6 +49,12 @@
   @apply bg-gray-300 dark:bg-gray-600 rounded-full;
 }
 
+/*
+ * Sigma's default stylesheet pins `--sigma-background-color: #fff` at :root
+ * and paints `div.react-sigma` with it, so the wrapper class below is not
+ * enough on its own — we also have to override the CSS variable in dark
+ * mode (and bump selector specificity) to recolor the canvas surface.
+ */
 .sigma-dark,
 .sigma-light {
   width: 100%;
@@ -56,10 +62,14 @@
   outline: none;
 }
 
-.sigma-dark {
+:root.dark {
+  --sigma-background-color: #0a0f1a;
+}
+
+div.react-sigma.sigma-dark {
   background-color: #0a0f1a;
 }
 
-.sigma-light {
+div.react-sigma.sigma-light {
   background-color: #f1f5f9;
 }
