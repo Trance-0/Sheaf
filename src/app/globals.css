@@ -259,3 +259,208 @@ body {
   color: var(--text-main);
   gap: 16px;
 }
+
+/* Light Theme overrides */
+body.light-theme {
+  --bg-color: #f8fafc;
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --panel-bg: rgba(255, 255, 255, 0.65);
+  --panel-border: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.1);
+}
+body.light-theme .app-container {
+  background: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.12), transparent 35%),
+              radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.12), transparent 35%);
+}
+
+body.light-theme .sigma-container {
+  background-color: transparent;
+}
+
+body.light-theme .panel-title {
+  background: linear-gradient(90deg, #111827, #4b5563);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light-theme .glass-card {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .glass-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .btn-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+body.light-theme .tab-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+body.light-theme .tab-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #1d4ed8;
+}
+
+body.light-theme .score-box,
+body.light-theme .mini-graph {
+  background: rgba(0, 0, 0, 0.05);
+}
+body.light-theme .expandable-text {
+  color: #374151;
+}
+
+
+/* Settings Modal Styling */
+.settings-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+}
+
+.settings-modal {
+  width: 480px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.settings-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-divider {
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  margin: 0;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+body.light-theme .settings-input {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.settings-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.theme-toggle-container {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+body.light-theme .theme-toggle-container {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-btn:hover {
+  color: var(--text-main);
+}
+
+.theme-btn.active {
+  background: var(--panel-bg);
+  color: var(--text-main);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .theme-btn.active {
+  background: #ffffff;
+  color: var(--text-main);
+}
+
+.settings-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.settings-save-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.settings-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--accent-green);
+}

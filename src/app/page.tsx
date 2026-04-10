@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import SidePanel from "@/components/SidePanel";
+import SettingsPanel from "@/components/SettingsPanel";
 import { Settings, TrendingUp, Briefcase } from "lucide-react";
 
 const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
@@ -13,6 +14,7 @@ const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"money" | "career">("money");
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
     <main className="app-container">
@@ -30,8 +32,8 @@ export default function Home() {
         >
           <Briefcase size={16} /> Career (My Time)
         </button>
-        <button className="tab-btn" style={{ marginLeft: "auto" }}>
-          <Settings size={16} /> Select Entities
+        <button className="tab-btn" style={{ marginLeft: "auto" }} onClick={() => setShowSettings(true)}>
+          <Settings size={16} /> Select Settings
         </button>
       </div>
 
@@ -42,6 +44,9 @@ export default function Home() {
 
       {/* Side Panel for Detail Cards */}
       <SidePanel selectedNode={selectedNode} onClose={() => setSelectedNode(null)} />
+      
+      {/* Settings Modal */}
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
     </main>
   );
 }
