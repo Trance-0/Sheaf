@@ -84,18 +84,56 @@ export default function GraphCanvas({ onNodeClick }: { onNodeClick: (id: string)
 }
 
 // Inner component for Sigma events
-import { useRegisterEvents } from "@react-sigma/core";
+import { useSigma, useRegisterEvents } from "@react-sigma/core";
 
 function EventsHandler({ onNodeClick }: { onNodeClick: (id: string) => void }) {
   const registerEvents = useRegisterEvents();
+  const sigma = useSigma();
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
 
   useEffect(() => {
     registerEvents({
       clickNode: (event) => {
         onNodeClick(event.node);
       },
+      downNode: (e) => {
+        setDraggedNode(e.node);
+        sigma.getGraph().setNodeAttribute(e.node, "highlighted", true);
+      },
+      mouseup: () => {
+        if (draggedNode) {
+          sigma.getGraph().removeNodeAttribute(draggedNode, "highlighted");
+          setDraggedNode(null);
+        }
+      },
     });
-  }, [registerEvents, onNodeClick]);
+  }, [registerEvents, onNodeClick, sigma, draggedNode]);
+
+  useEffect(() => {
+    if (draggedNode) {
+      sigma.setSetting("enableCameraPanning", false);
+      const onMouseMove = (e: MouseEvent) => {
+        const pos = sigma.viewportToGraph({ x: e.clientX, y: e.clientY });
+        sigma.getGraph().setNodeAttribute(draggedNode, "x", pos.x);
+        sigma.getGraph().setNodeAttribute(draggedNode, "y", pos.y);
+      };
+      const onMouseUp = () => {
+        if (draggedNode) {
+          sigma.getGraph().removeNodeAttribute(draggedNode, "highlighted");
+        }
+        setDraggedNode(null);
+        sigma.setSetting("enableCameraPanning", true);
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      
+      return () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+      };
+    }
+  }, [draggedNode, sigma]);
 
   return null;
 }
