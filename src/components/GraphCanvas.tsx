@@ -55,10 +55,10 @@ export default function GraphCanvas({
               size: Math.min(2 + e.weight * 0.5, 10),
               color:
                 e.impact === "positive"
-                  ? "rgba(16, 185, 129, 0.6)"
+                  ? "#10b981"
                   : e.impact === "negative"
-                    ? "rgba(239, 68, 68, 0.6)"
-                    : "rgba(156, 163, 175, 0.6)",
+                    ? "#ef4444"
+                    : "#6b7280",
               label: `${e.eventCount} event(s)`,
             });
           }
@@ -79,11 +79,12 @@ export default function GraphCanvas({
         defaultEdgeType: "line",
         labelRenderedSizeThreshold: 10,
         labelColor: { color: isDarkMode ? "#f8fafc" : "#111827" },
+        edgeLabelColor: { color: isDarkMode ? "#94a3b8" : "#6b7280" },
         labelSize: 14,
         labelWeight: "600",
         labelFont: "Inter",
       }}
-      className="sigma-container"
+      className={isDarkMode ? "sigma-dark" : "sigma-light"}
     >
       <LayoutController />
       <EventsHandler onNodeClick={onNodeClick} onEdgeClick={onEdgeClick} />

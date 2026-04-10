@@ -49,9 +49,17 @@
   @apply bg-gray-300 dark:bg-gray-600 rounded-full;
 }
 
-.sigma-container {
+.sigma-dark,
+.sigma-light {
   width: 100%;
   height: 100%;
   outline: none;
-  background-color: transparent;
+}
+
+.sigma-dark {
+  background-color: #0a0f1a;
+}
+
+.sigma-light {
+  background-color: #f1f5f9;
 }
