@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl } from "@react-sigma/core";
+import { useEffect, useState, useRef } from "react";
+import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl, useSigma, useRegisterEvents } from "@react-sigma/core";
+import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
-import forceAtlas2 from "graphology-layout-forceatlas2";
-
-// Mock data generator for the initial demonstration. 
-// In production, this will be fetched from Neon Postgres + AI cache edge functions.
-import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 
 function LayoutController() {
   const { start, kill } = useWorkerLayoutForceAtlas2({ settings: { gravity: 1, slowDown: 10 } });
@@ -19,11 +15,30 @@ function LayoutController() {
   return null;
 }
 
-export default function GraphCanvas({ onNodeClick }: { onNodeClick: (id: string) => void }) {
+export default function GraphCanvas({ 
+  onNodeClick, 
+  onEdgeClick, 
+  timeFilter 
+}: { 
+  onNodeClick: (id: string) => void;
+  onEdgeClick: (id: string) => void;
+  timeFilter: number;
+}) {
   const [graph, setGraph] = useState<Graph | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
-    fetch("/api/graph")
+    // Determine the current theme natively avoiding flash
+    const checkTheme = () => setIsDarkMode(!document.body.classList.contains("light-theme"));
+    checkTheme();
+    // Observe class changes gracefully
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/graph?days=${timeFilter}`)
       .then(res => res.json())
       .then(data => {
         const g = new Graph();
@@ -39,15 +54,15 @@ export default function GraphCanvas({ onNodeClick }: { onNodeClick: (id: string)
         data.edges.forEach((e: any) => {
           if (!g.hasEdge(e.source, e.target)) {
              g.addEdge(e.source, e.target, {
-               size: 2,
-               color: e.impact === "positive" ? "rgba(16, 185, 129, 0.4)" : e.impact === "negative" ? "rgba(239, 68, 68, 0.4)" : "rgba(156, 163, 175, 0.4)",
+               size: 3,
+               color: e.impact === "positive" ? "rgba(16, 185, 129, 0.6)" : e.impact === "negative" ? "rgba(239, 68, 68, 0.6)" : "rgba(156, 163, 175, 0.6)",
              });
           }
         });
         setGraph(g);
       })
       .catch(console.error);
-  }, []);
+  }, [timeFilter]);
 
   if (!graph) return null;
 
@@ -55,10 +70,11 @@ export default function GraphCanvas({ onNodeClick }: { onNodeClick: (id: string)
     <SigmaContainer 
       graph={graph} 
       settings={{
+        enableEdgeEvents: true,
         defaultNodeType: "circle",
         defaultEdgeType: "line",
         labelRenderedSizeThreshold: 10,
-        labelColor: { color: "#f3f4f6" },
+        labelColor: { color: isDarkMode ? "#f8fafc" : "#111827" },
         labelSize: 14,
         labelWeight: "600",
         labelFont: "Inter",
@@ -66,10 +82,9 @@ export default function GraphCanvas({ onNodeClick }: { onNodeClick: (id: string)
       className="sigma-container"
     >
       <LayoutController />
-      {/* Exposing events hook correctly using useRegisterEvents inside Sigma Container */}
-      <EventsHandler onNodeClick={onNodeClick} />
+      <EventsHandler onNodeClick={onNodeClick} onEdgeClick={onEdgeClick} />
       
-      <ControlsContainer position={"bottom-right"}>
+      <ControlsContainer position={"bottom-right"} className="[&>button]:bg-white/10 [&>button]:border [&>button]:border-white/20 [&>button:hover]:bg-white/20 [&>button_svg]:invert-0">
         <ZoomControl />
         <FullScreenControl />
       </ControlsContainer>
@@ -77,10 +92,13 @@ export default function GraphCanvas({ onNodeClick }: { onNodeClick: (id: string)
   );
 }
 
-// Inner component for Sigma events
-import { useSigma, useRegisterEvents } from "@react-sigma/core";
-
-function EventsHandler({ onNodeClick }: { onNodeClick: (id: string) => void }) {
+function EventsHandler({ 
+  onNodeClick,
+  onEdgeClick 
+}: { 
+  onNodeClick: (id: string) => void;
+  onEdgeClick: (id: string) => void;
+}) {
   const registerEvents = useRegisterEvents();
   const sigma = useSigma();
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
@@ -89,6 +107,9 @@ function EventsHandler({ onNodeClick }: { onNodeClick: (id: string) => void }) {
     registerEvents({
       clickNode: (event) => {
         onNodeClick(event.node);
+      },
+      clickEdge: (event) => {
+         onEdgeClick(event.edge);
       },
       downNode: (e) => {
         setDraggedNode(e.node);
@@ -101,7 +122,7 @@ function EventsHandler({ onNodeClick }: { onNodeClick: (id: string) => void }) {
         }
       },
     });
-  }, [registerEvents, onNodeClick, sigma, draggedNode]);
+  }, [registerEvents, onNodeClick, onEdgeClick, sigma, draggedNode]);
 
   useEffect(() => {
     if (draggedNode) {

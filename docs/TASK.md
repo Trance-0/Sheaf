@@ -26,3 +26,5 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 ## Current Tasks
 - [ ] Setup Python Ollama Cron scripts for automated news clustering
 - [ ] Enable robust filtering by agencies for the 'Career' job tracking tab
+- [ ] Wire real event/article data into SidePanel from Prisma (currently shows placeholder text)
+

@@ -13,7 +13,7 @@ Sheaf is an investment and career intelligence interactive graph visualizer. It 
 Single-user, local-first intelligence board. It is NOT built for public SaaS consumption. Emphasize lightweight maintenance and high personal leverage.
 
 ## Tech Stack & Architecture
-- **Frontend App Shell**: Next.js (App Router). DO NOT use TailwindCSS. Use vanilla CSS styled in `globals.css` with dark mode, glassmorphic UI, and vibrant colors without placeholders.
+- **Frontend App Shell**: Next.js (App Router). Extensively use TailwindCSS to implement modern, beautiful, dynamic web design. Maintain glassmorphic UI dynamics and responsive grid handling dynamically adapting without relying on rigid Vanilla CSS.
 - **Graph Visualization**: `@react-sigma/core` with `graphology` and `graphology-layout-forceatlas2`.
 - **Database Layer**: Neon Postgres managed via **Prisma ORM**.
 - **Backend APIs**: Handled via Next.js server routes.
