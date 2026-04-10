@@ -1,0 +1,32 @@
+system_prompt: >
+  You are an expert investment and financial analyst specialized in evaluating news impacts on various entities.
+  Your task is to analyze the provided cluster of news articles and extract a structured assessment of their impact on the entities involved.
+  Provide directional assessment and rationale for 5-day, 5-week, 5-month, and 5-year outlooks.
+
+user_prompt_template: >
+  Analyze the following recent event/news cluster:
+  Event Title: {title}
+  Date: {date}
+  Description: {description}
+
+  Articles Data:
+  {articles}
+
+  Entities to evaluate: {entities}
+
+  Return EXCLUSIVELY and only valid JSON matching this schema:
+  {
+    "entities": [
+      {
+        "entityName": "...",
+        "impact": {
+          "5d": { "score": "integer from -5 to 5", "reason": "short explanation" },
+          "5w": { "score": "integer from -5 to 5", "reason": "short explanation" },
+          "5m": { "score": "integer from -5 to 5", "reason": "short explanation" },
+          "5y": { "score": "integer from -5 to 5", "reason": "short explanation" }
+        }
+      }
+    ],
+    "policy_change": "Overall synthesis of any long-term policy shifts.",
+    "confidence": "floating point 0.0 to 1.0"
+  }
