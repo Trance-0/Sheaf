@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Entity {
+  id             String   @id @default(uuid())
+  name           String
+  type           String
+  description    String?
+  interestWeight Float    @default(1.0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  aliases   EntityAlias[]
+  events    EventEntity[]
+  snapshots EntitySnapshot[]
+  cards     CacheCard[]
+}
+
+model EntityAlias {
+  id       String @id @default(uuid())
+  entityId String
+  alias    String
+  entity   Entity @relation(fields: [entityId], references: [id])
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  date        DateTime
+  description String?
+
+  entities  EventEntity[]
+  articles  Article[]
+  cards     CacheCard[]
+  createdAt DateTime      @default(now())
+}
+
+model EventEntity {
+  id       String @id @default(uuid())
+  eventId  String
+  entityId String
+
+  impactScore5d Float?
+  impactScore5w Float?
+  impactScore5m Float?
+  impactScore5y Float?
+
+  event  Event  @relation(fields: [eventId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@unique([eventId, entityId])
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  url         String   @unique
+  title       String
+  provider    String?
+  publishedAt DateTime
+  body        String?
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id])
+}
+
+model EntitySnapshot {
+  id         String   @id @default(uuid())
+  entityId   String
+  date       DateTime
+  netWorth   Float?
+  growth     Float?
+  statusText String?
+  entity     Entity   @relation(fields: [entityId], references: [id])
+}
+
+model CacheCard {
+  id        String   @id @default(uuid())
+  type      String
+  entityId  String?
+  eventId   String?
+  content   String
+  updatedAt DateTime @updatedAt
+
+  entity Entity? @relation(fields: [entityId], references: [id])
+  event  Event?  @relation(fields: [eventId], references: [id])
+}
