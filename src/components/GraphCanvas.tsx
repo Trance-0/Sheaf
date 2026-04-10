@@ -28,10 +28,10 @@ export default function GraphCanvas({
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
-    const checkTheme = () => setIsDarkMode(!document.body.classList.contains("light-theme"));
+    const checkTheme = () => setIsDarkMode(document.documentElement.classList.contains("dark"));
     checkTheme();
     const observer = new MutationObserver(checkTheme);
-    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
   }, []);
 

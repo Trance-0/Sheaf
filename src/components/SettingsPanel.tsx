@@ -9,19 +9,19 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    if (document.body.classList.contains("light-theme")) {
-      setTheme("light");
-    } else {
+    if (document.documentElement.classList.contains("dark")) {
       setTheme("dark");
+    } else {
+      setTheme("light");
     }
   }, []);
 
   const toggleTheme = () => {
     if (theme === "dark") {
-      document.body.classList.add("light-theme");
+      document.documentElement.classList.remove("dark");
       setTheme("light");
     } else {
-      document.body.classList.remove("light-theme");
+      document.documentElement.classList.add("dark");
       setTheme("dark");
     }
   };
