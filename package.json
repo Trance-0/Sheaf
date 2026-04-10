@@ -12,6 +12,8 @@
     "@prisma/client": "^6.19.3",
     "@react-sigma/core": "^5.0.6",
     "@react-sigma/layout-forceatlas2": "^5.0.6",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "framer-motion": "^12.38.0",
     "graphology": "^0.26.0",
     "graphology-layout-forceatlas2": "^0.10.1",

@@ -27,7 +27,6 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 
 > Urgent
 
-- [ ] Remove the backend data probing task defined in github action, instead, let user's agents to add the entries for them and we will deploy the front end only. Set up the project to be deployed on Vercel, with analytics and speed insights.
 - [ ] Multi-file ingestion in the 'News' tab via embedded OpenClaw conversation protocol (deferred from v0.1.7). The filter-only News view has shipped; the upload/ingest side will be a client-side flow that hands files to an OpenClaw conversation that parses and inserts events using the same dedup protocol as `skills/news_crawl/update_news.ts`.
 - [ ] Move the `kind` discriminator off of "event has ≥2 entities" (tech debt from 0.1.7) onto an explicit `Event.category` column via `prisma db push`. Migrate existing rows: single-agency events → `job`, multi-entity events → `news`.
 
