@@ -10,14 +10,18 @@ Teach the agent how to add news articles and events into the Sheaf Prisma databa
 
 **Key principle:** Edges in the graph represent **Events**, NOT individual articles. If three articles cover the same story (e.g., "Google partners with Anthropic on AI safety"), they should all link to ONE event, not create three separate edges.
 
-## Tool
-TypeScript CLI script: `scripts/update_jobs.ts`
+## Tools (colocated with this skill)
+
+- `skills/news_crawl/update_news.ts` — TypeScript CLI for adding news events (deduplication-aware)
+- `skills/news_crawl/cleanup_duplicates.ts` — utility to purge duplicate entity nodes by slug
+- `skills/news_crawl/pipeline.py` — LLM-driven impact assessment pipeline (consumes `config/prompts.yaml`)
+- `skills/news_crawl/requirements.txt` — Python deps for `pipeline.py`
 
 ## CRITICAL: Deduplication Protocol
 
 ### Step 1 — Check if the article URL already exists
 ```bash
-npx tsx scripts/update_jobs.ts list-events
+npx tsx skills/news_crawl/update_news.ts list-events
 ```
 Search the output for the URL you intend to add. If found, **STOP — do not insert**.
 
@@ -27,25 +31,35 @@ Look for events with overlapping keywords between the same entity pair. If found
 ### Step 3 — Insert
 ```bash
 # Add a news event between two entities (dedup-aware)
-npx tsx scripts/update_jobs.ts add-news "<Entity1>" "<Entity2>" "<EventTitle>" "<ArticleURL>" "<YYYY-MM-DD>" "[Optional Description]"
+npx tsx skills/news_crawl/update_news.ts add-news "<Entity1>" "<Entity2>" "<EventTitle>" "<ArticleURL>" "<YYYY-MM-DD>" "[Optional Description]"
 ```
 
 **Examples:**
 ```bash
 # First article about a partnership
-npx tsx scripts/update_jobs.ts add-news "Google" "Anthropic" "AI Safety Research Partnership" "https://reuters.com/article/123" "2026-04-05" "Google and Anthropic announce joint research on AI alignment."
+npx tsx skills/news_crawl/update_news.ts add-news "Google" "Anthropic" "AI Safety Research Partnership" "https://reuters.com/article/123" "2026-04-05" "Google and Anthropic announce joint research on AI alignment."
 
 # Second article about the SAME event from a different source — will auto-attach to existing event
-npx tsx scripts/update_jobs.ts add-news "Google" "Anthropic" "AI Safety Partnership Announcement" "https://techcrunch.com/article/456" "2026-04-05" "Coverage of the Google-Anthropic alignment deal."
+npx tsx skills/news_crawl/update_news.ts add-news "Google" "Anthropic" "AI Safety Partnership Announcement" "https://techcrunch.com/article/456" "2026-04-05" "Coverage of the Google-Anthropic alignment deal."
 ```
 
 If the script reports `Matched existing event "..."`, it means the article was attached as a reference to the existing event. This is correct behavior — it prevents graph hairballs.
 
 ### Step 4 — Verify
 ```bash
-npx tsx scripts/update_jobs.ts list-events
-npx tsx scripts/update_jobs.ts list-entities
+npx tsx skills/news_crawl/update_news.ts list-events
+npx tsx skills/news_crawl/update_news.ts list-entities
 ```
+
+### Maintenance — Purge duplicate entities
+
+If manual edits created entity duplicates that share the same name but different IDs, run:
+
+```bash
+npx tsx skills/news_crawl/cleanup_duplicates.ts
+```
+
+The script folds `EventEntity` rows onto the master record before deleting the duplicates.
 
 ## Rules
 - Entities are upserted by slug (lowercase hyphenated). No duplicates.

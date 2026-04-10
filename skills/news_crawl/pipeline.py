@@ -16,7 +16,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-3.5-turbo") # Default to a free or low-cost model, user customizable
 
 def load_prompts():
-    path = os.path.join(os.path.dirname(__file__), "..", "config", "prompts.yaml")
+    path = os.path.join(os.path.dirname(__file__), "..", "..", "config", "prompts.yaml")
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
@@ -56,16 +56,16 @@ def get_openrouter_assessment(prompts, event_data):
 
     resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
     resp.raise_for_status()
-    
-    result_text = resp.json()Str = resp.json()["choices"][0]["message"]["content"]
-    
+
+    result_text = resp.json()["choices"][0]["message"]["content"]
+
     # Simple cleanup for JSON tags
     result_text = result_text.strip()
     if result_text.startswith("```json"):
         result_text = result_text[7:]
     if result_text.endswith("```"):
         result_text = result_text[:-3]
-        
+
     try:
         return json.loads(result_text)
     except json.JSONDecodeError as e:
@@ -111,7 +111,7 @@ def save_to_db(conn, event_data, assessment):
         for ent_data in assessment.get("entities", []):
             ent_name = ent_data.get("entityName")
             if not ent_name: continue
-            
+
             ent_id = ent_name.lower().replace(" ", "-")
 
             cur.execute("""
@@ -146,9 +146,9 @@ def save_to_db(conn, event_data, assessment):
 def main():
     logger.info("Starting Data Pipeline...")
     prompts = load_prompts()
-    
+
     events = process_mock_events()
-    
+
     conn = None
     try:
         conn = connect_db()

@@ -20,10 +20,10 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r scripts/requirements.txt
+        run: pip install -r skills/news_crawl/requirements.txt
 
       - name: Run Pipeline
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python scripts/pipeline.py
+        run: python skills/news_crawl/pipeline.py

@@ -24,7 +24,13 @@ Always finish `> Urgent` tasks first if exists.
 PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK 
 
 ## Current Tasks
-- [ ] Enable robust filtering by agencies for the 'Career' job tracking tab
+
+> Urgent
+
+- [ ] Initial data population, use skills described in this repo to update the info about the major companies mentioned in Project Glasswing. Search it online and populate the database, credentials are in the local `.env` file.
+
+- [ ] Allow uploading multiple files in the 'News' tab 
+- [ ] Enable robust filtering by agencies for the 'Career' job tracking tab, add filter for years of experience and keywords matching.
 - [ ] Populate entity `homepage` and `jobPortal` fields for tracked entities
-- [ ] Setup Python Ollama Cron scripts for automated news clustering
+- [ ] Remove the backend data probing task defined in github action, instead, let user's agents to add the entries for them and we will deploy the front end only. Set up the project to be deployed on Vercel, with analytics and speed insights.
 
