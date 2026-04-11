@@ -20,7 +20,7 @@ async function check() {
   console.log('Duplicated Entities by Name:', entities);
 
   const ids = await prisma.entity.findMany();
-  console.log('All Entities:', ids.map(i => ({id: i.id, name: i.name})));
+  console.log('All Entities:', ids.map((i: { id: string; name: string }) => ({ id: i.id, name: i.name })));
 }
 
 check().finally(() => prisma.$disconnect());

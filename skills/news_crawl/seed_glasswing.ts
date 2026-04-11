@@ -12,7 +12,7 @@
  *
  * Safe to re-run; duplicate URLs and keyword-matched events are skipped.
  */
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -97,7 +97,7 @@ async function main() {
             { entities: { some: { entityId: slug1 } } },
             { entities: { some: { entityId: slug2 } } },
           ],
-          OR: keywords.map(kw => ({ title: { contains: kw, mode: 'insensitive' as Prisma.QueryMode } })),
+          OR: keywords.map((kw) => ({ title: { contains: kw, mode: 'insensitive' } })),
         },
         take: 1,
       });

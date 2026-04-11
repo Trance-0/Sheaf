@@ -5,7 +5,7 @@ import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl, useS
 import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
-import type { NodeSizeFactor } from "@/lib/useAppSettings";
+import { buildDatabaseHeaders, hasDatabaseUrl, type EdgeSizeFactor, type NodeSizeFactor, type AppSettings } from "@/lib/useAppSettings";
 
 interface GraphNode {
   id: string;
@@ -17,62 +17,49 @@ interface GraphNode {
   freeCashFlow: number | null;
 }
 
-/**
- * Maps the user's selected size-factor onto a visible sigma node radius.
- *
- * We log-scale the financial fields because market-cap and free-cash-flow
- * span orders of magnitude (billions vs low-millions), and a linear mapping
- * would make the small nodes disappear. When a node is missing the chosen
- * field we fall back to event_count so the node still shows up at all.
- */
-function computeNodeSize(factor: NodeSizeFactor, n: GraphNode): number {
+interface GraphEdge {
+  id: string;
+  source: string;
+  target: string;
+  weight: number;
+  impact: string;
+  eventCount: number;
+}
+
+function computeNodeSize(factor: NodeSizeFactor, node: GraphNode): number {
   const MIN = 8;
   const MAX = 40;
-  const clamp = (v: number) => Math.max(MIN, Math.min(MAX, v));
+  const clamp = (value: number) => Math.max(MIN, Math.min(MAX, value));
+  const eventBase = clamp(8 + (node.eventCount ?? 1) * 3);
 
-  const eventBase = clamp(8 + (n.eventCount ?? 1) * 3);
-
-  const logScale = (v: number | null, pivot: number) => {
-    if (!v || v <= 0) return null;
-    // pivot is the value that should map to ~half-scale (~24)
-    const logV = Math.log10(v);
+  const logScale = (value: number | null, pivot: number) => {
+    if (!value || value <= 0) return null;
+    const logV = Math.log10(value);
     const logPivot = Math.log10(pivot);
     return clamp(8 + (logV / logPivot) * 20);
   };
 
   switch (factor) {
-    case "market_cap": {
-      // pivot ~= $100B
-      const s = logScale(n.marketCapUsd, 1e11);
-      return s ?? eventBase;
-    }
-    case "employee_count": {
-      // pivot ~= 100k employees
-      const s = logScale(n.employeeCount, 1e5);
-      return s ?? eventBase;
-    }
-    case "free_cash_flow": {
-      // pivot ~= $10B
-      const s = logScale(n.freeCashFlow, 1e10);
-      return s ?? eventBase;
-    }
+    case "market_cap":
+      return logScale(node.marketCapUsd, 1e11) ?? eventBase;
+    case "employee_count":
+      return logScale(node.employeeCount, 1e5) ?? eventBase;
+    case "free_cash_flow":
+      return logScale(node.freeCashFlow, 1e10) ?? eventBase;
     case "event_count":
     default:
       return eventBase;
   }
 }
 
-/**
- * Controls layout + sigma event wiring.
- *
- * Design notes:
- *  - ForceAtlas2 only runs for a short settle window after mount, then stops.
- *    Leaving the worker running forever makes the canvas jitter and fights any
- *    attempt to drag nodes (the layout just snaps them back).
- *  - Dragging stops the layout on the first downNode (belt-and-braces in case
- *    the settle timer hasn't fired yet) and wires document-level mousemove/up
- *    so the drag keeps tracking even outside the canvas.
- */
+function computeEdgeSize(factor: EdgeSizeFactor, edge: GraphEdge): number {
+  switch (factor) {
+    case "event_count":
+    default:
+      return Math.min(2 + edge.eventCount * 0.8, 10);
+  }
+}
+
 function SigmaController({
   onNodeClick,
   onEdgeClick,
@@ -86,14 +73,12 @@ function SigmaController({
     settings: { gravity: 1, slowDown: 10, barnesHutOptimize: true },
   });
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
-  // Hold stop in a ref so event handlers reach the latest function without
-  // re-registering every render.
   const stopRef = useRef(stop);
+
   useEffect(() => {
     stopRef.current = stop;
   }, [stop]);
 
-  // Kick off the layout, then cut it after a short settle window.
   useEffect(() => {
     start();
     const settle = setTimeout(() => stopRef.current(), 3000);
@@ -103,31 +88,27 @@ function SigmaController({
     };
   }, [start, kill]);
 
-  // Register click + drag-start events.
   useEffect(() => {
     registerEvents({
       clickNode: (event) => onNodeClick(event.node),
       clickEdge: (event) => {
-        const g = sigma.getGraph();
-        onEdgeClick(g.source(event.edge), g.target(event.edge));
+        const graph = sigma.getGraph();
+        onEdgeClick(graph.source(event.edge), graph.target(event.edge));
       },
       downNode: (event) => {
         setDraggedNode(event.node);
         sigma.getGraph().setNodeAttribute(event.node, "highlighted", true);
-        // Pause layout so the drag actually sticks.
         stopRef.current();
       },
     });
   }, [registerEvents, sigma, onNodeClick, onEdgeClick]);
 
-  // While a node is being dragged, listen for mousemove/up at the document
-  // level so the drag continues even if the cursor leaves the sigma canvas.
   useEffect(() => {
     if (!draggedNode) return;
     sigma.setSetting("enableCameraPanning", false);
 
-    const onMove = (e: MouseEvent) => {
-      const pos = sigma.viewportToGraph({ x: e.clientX, y: e.clientY });
+    const onMove = (event: MouseEvent) => {
+      const pos = sigma.viewportToGraph({ x: event.clientX, y: event.clientY });
       sigma.getGraph().setNodeAttribute(draggedNode, "x", pos.x);
       sigma.getGraph().setNodeAttribute(draggedNode, "y", pos.y);
     };
@@ -154,15 +135,23 @@ export default function GraphCanvas({
   timeFilter,
   kind = "all",
   sizeFactor = "event_count",
+  edgeSizeFactor = "event_count",
+  settings,
 }: {
   onNodeClick: (id: string) => void;
   onEdgeClick: (source: string, target: string) => void;
   timeFilter: number;
   kind?: "all" | "news" | "job";
   sizeFactor?: NodeSizeFactor;
+  edgeSizeFactor?: EdgeSizeFactor;
+  settings: Pick<AppSettings, "databaseUrl">;
 }) {
   const [graph, setGraph] = useState<Graph | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const missingDatabaseMessage = !hasDatabaseUrl(settings)
+    ? "Add your database URL in Settings or import a settings JSON file to load the graph."
+    : null;
 
   useEffect(() => {
     const checkTheme = () => setIsDarkMode(document.documentElement.classList.contains("dark"));
@@ -173,48 +162,63 @@ export default function GraphCanvas({
   }, []);
 
   useEffect(() => {
-    fetch(`/api/graph?days=${timeFilter}&kind=${kind}`)
-      .then(res => res.json())
-      .then(data => {
-        const g = new Graph();
-        // Spread initial positions widely so FA2 isn't starting from a
-        // pile in the middle of the canvas.
-        data.nodes.forEach((n: GraphNode) => {
-          g.addNode(n.id, {
+    if (!hasDatabaseUrl(settings)) return;
+
+    let cancelled = false;
+
+    fetch(`/api/graph?days=${timeFilter}&kind=${kind}`, {
+      headers: buildDatabaseHeaders(settings),
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Failed to load graph");
+        return data;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setError(null);
+        const graph = new Graph();
+        data.nodes.forEach((node: GraphNode) => {
+          graph.addNode(node.id, {
             x: (Math.random() - 0.5) * 1000,
             y: (Math.random() - 0.5) * 1000,
-            size: computeNodeSize(sizeFactor, n),
-            label: n.label || n.id,
-            color: (n.score ?? 0) > 0 ? "#10b981" : (n.score ?? 0) < 0 ? "#ef4444" : "#9ca3af",
+            size: computeNodeSize(sizeFactor, node),
+            label: node.label || node.id,
+            color: (node.score ?? 0) > 0 ? "#10b981" : (node.score ?? 0) < 0 ? "#ef4444" : "#9ca3af",
           });
         });
-        data.edges.forEach((e: { id: string; source: string; target: string; weight: number; impact: string; eventCount: number }) => {
-          if (g.hasNode(e.source) && g.hasNode(e.target) && !g.hasEdge(e.id)) {
-            g.addEdgeWithKey(e.id, e.source, e.target, {
-              size: Math.min(2 + e.weight * 0.5, 10),
-              color:
-                e.impact === "positive"
-                  ? "#10b981"
-                  : e.impact === "negative"
-                    ? "#ef4444"
-                    : "#6b7280",
-              label: `${e.eventCount} event(s)`,
+        data.edges.forEach((edge: GraphEdge) => {
+          if (graph.hasNode(edge.source) && graph.hasNode(edge.target) && !graph.hasEdge(edge.id)) {
+            graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
+              size: computeEdgeSize(edgeSizeFactor, edge),
+              color: edge.impact === "positive" ? "#10b981" : edge.impact === "negative" ? "#ef4444" : "#6b7280",
+              label: `${edge.eventCount} event(s)`,
             });
           }
         });
-        setGraph(g);
+        setGraph(graph);
       })
-      .catch(console.error);
-  }, [timeFilter, kind, sizeFactor]);
+      .catch((fetchError) => {
+        if (!cancelled) {
+          setGraph(null);
+          setError(fetchError instanceof Error ? fetchError.message : "Failed to load graph");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [timeFilter, kind, sizeFactor, edgeSizeFactor, settings]);
+
+  if (missingDatabaseMessage || error) {
+    return <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-600 dark:text-gray-300">{missingDatabaseMessage || error}</div>;
+  }
 
   if (!graph) return null;
 
   return (
     <SigmaContainer
-      // Force a remount whenever the filter or graph changes so sigma +
-      // layout worker start clean; without this the FA2 settle timer only
-      // fires on the very first load.
-      key={`${timeFilter}-${kind}-${sizeFactor}-${graph.order}-${graph.size}`}
+      key={`${timeFilter}-${kind}-${sizeFactor}-${edgeSizeFactor}-${graph.order}-${graph.size}`}
       graph={graph}
       settings={{
         enableEdgeEvents: true,
@@ -230,8 +234,7 @@ export default function GraphCanvas({
       className={isDarkMode ? "sigma-dark" : "sigma-light"}
     >
       <SigmaController onNodeClick={onNodeClick} onEdgeClick={onEdgeClick} />
-
-      <ControlsContainer position={"bottom-right"}>
+      <ControlsContainer position="bottom-right">
         <ZoomControl />
         <FullScreenControl />
       </ControlsContainer>

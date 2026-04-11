@@ -69,6 +69,8 @@ export default function Home() {
           onEdgeClick={handleEdgeClick}
           timeFilter={timeFilter}
           sizeFactor={settings.nodeSizeFactor}
+          edgeSizeFactor={settings.edgeSizeFactor}
+          settings={settings}
         />
       </section>
 

@@ -30,7 +30,7 @@ async function cleanupDuplicates() {
         await prisma.eventEntity.updateMany({
            where: { entityId: duplicateId },
            data: { entityId: masterId }
-        }).catch(err => console.log(`Constraint pass handled for ${duplicateId}`)); // Handle unique composite constraint
+        }).catch(() => console.log(`Constraint pass handled for ${duplicateId}`)); // Handle unique composite constraint
 
         await prisma.entity.delete({
           where: { id: duplicateId }

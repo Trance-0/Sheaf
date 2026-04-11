@@ -4,8 +4,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sheaf | Investment & Career Intelligence",
-  description: "Interactive graph visualizer for investment news and entity impact.",
+  title: "Sheaf | Local-First Intelligence Graph",
+  description: "Interactive investment and career intelligence graph powered by user-supplied local JSON settings and database credentials.",
 };
 
 export default function RootLayout({
