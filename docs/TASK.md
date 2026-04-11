@@ -25,29 +25,4 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 
 ## Current Tasks
 
-- [ ] Grab the necessary data again, using the skills in news crawl. Include the news for the following listed entities, crawl at least 5 recent news from each of them:
-  - Anthropic
-  - OpenAI
-  - Google
-  - Apple
-  - Meta
-  - Amazon
-  - Microsoft
-  - Crowdstrike
-  - JPMorgan
-  - Palantir
-  - Linux Foundation
-  - AWS
-  - OpenSSF
-  - Nvidia
-  - Intel
-  - Oracle
-  - AMD
-  - IBM
-  - Figma
-  - Adobe
-  - Salesforce
-  - Slack
-  - Uber
-  - TikTok
-  - And other tech entities related to AI listed in Nasdaq.com
+_No pending tasks. Add new items here as they come up._
