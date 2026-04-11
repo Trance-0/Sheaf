@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import SidePanel from "@/components/SidePanel";
 import SettingsPanel from "@/components/SettingsPanel";
-import TimeScaleBar from "@/components/TimeScaleBar";
+import DateRangeFilter, { defaultDateRange, type DateRange } from "@/components/DateRangeFilter";
 import { useAppSettings } from "@/lib/useAppSettings";
 import { Settings } from "lucide-react";
 
@@ -17,9 +17,10 @@ export default function Home() {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{ source: string; target: string } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  // Default to "All Time" so the user sees every seeded event on first load
-  // instead of the handful that fall inside a 30-day window.
-  const [timeFilter, setTimeFilter] = useState<number>(9999);
+  // 0.1.15: the date range picker replaces the single-value "days ago"
+  // slider. Default window is the last 1 year ending today. Edge alpha
+  // fades by each event's distance from `dateRange.end`.
+  const [dateRange, setDateRange] = useState<DateRange>(() => defaultDateRange());
 
   // Node-size factor + theme live in a persisted settings store so they
   // survive reloads and can be exported/imported as JSON.
@@ -57,9 +58,9 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Time scale bar — always live, pinned centered at the top. */}
+      {/* Date range picker — always live, pinned centered at the top. */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-        <TimeScaleBar value={timeFilter} onChange={setTimeFilter} />
+        <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Main Graph Area */}
@@ -67,7 +68,7 @@ export default function Home() {
         <GraphCanvas
           onNodeClick={handleNodeClick}
           onEdgeClick={handleEdgeClick}
-          timeFilter={timeFilter}
+          dateRange={dateRange}
           sizeFactor={settings.nodeSizeFactor}
           edgeSizeFactor={settings.edgeSizeFactor}
           settings={settings}

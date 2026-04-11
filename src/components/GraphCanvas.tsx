@@ -6,6 +6,7 @@ import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
 import { buildDatabaseHeaders, hasDatabaseUrl, type EdgeSizeFactor, type NodeSizeFactor, type AppSettings } from "@/lib/useAppSettings";
+import type { DateRange } from "@/components/DateRangeFilter";
 
 interface GraphNode {
   id: string;
@@ -17,6 +18,14 @@ interface GraphNode {
   freeCashFlow: number | null;
 }
 
+interface GraphEdgeEvent {
+  id: string;
+  title: string;
+  date: string; // ISO — JSON-serialized from Prisma Date on the API
+  description: string | null;
+  articleCount: number;
+}
+
 interface GraphEdge {
   id: string;
   source: string;
@@ -24,6 +33,48 @@ interface GraphEdge {
   weight: number;
   impact: string;
   eventCount: number;
+  events: GraphEdgeEvent[];
+}
+
+/**
+ * Map an edge's latest event date to an opacity in [0.2, 1.0], based on how
+ * far back it sits inside the query window. Edges whose most recent event
+ * is close to `end` render near 1.0; edges whose events all sit near
+ * `start` fade toward the floor.
+ *
+ * We anchor to the *most recent* event on the edge, not the average, so
+ * that an ongoing relationship with a fresh update still reads as "live"
+ * even if it also has old history.
+ */
+function computeEdgeAlpha(edge: GraphEdge, range: DateRange): number {
+  if (!edge.events?.length) return 1;
+  const FLOOR = 0.2;
+  const endMs = range.end.getTime();
+  const startMs = range.start.getTime();
+  const span = Math.max(1, endMs - startMs);
+  // Latest event on this edge
+  let latest = -Infinity;
+  for (const ev of edge.events) {
+    const t = new Date(ev.date).getTime();
+    if (!Number.isNaN(t) && t > latest) latest = t;
+  }
+  if (!Number.isFinite(latest)) return 1;
+  const distance = Math.max(0, endMs - latest);
+  const fraction = Math.min(1, distance / span);
+  return Math.max(FLOOR, 1 - fraction * (1 - FLOOR));
+}
+
+/** Base impact colors, duplicated here as RGB tuples so we can compose rgba() strings. */
+const IMPACT_RGB: Record<string, [number, number, number]> = {
+  positive: [16, 185, 129], // #10b981
+  negative: [239, 68, 68],  // #ef4444
+  neutral: [107, 114, 128], // #6b7280
+};
+
+function edgeColor(edge: GraphEdge, range: DateRange): string {
+  const [r, g, b] = IMPACT_RGB[edge.impact] ?? IMPACT_RGB.neutral;
+  const a = computeEdgeAlpha(edge, range);
+  return `rgba(${r}, ${g}, ${b}, ${a.toFixed(3)})`;
 }
 
 function computeNodeSize(factor: NodeSizeFactor, node: GraphNode): number {
@@ -132,7 +183,7 @@ function SigmaController({
 export default function GraphCanvas({
   onNodeClick,
   onEdgeClick,
-  timeFilter,
+  dateRange,
   kind = "all",
   sizeFactor = "event_count",
   edgeSizeFactor = "event_count",
@@ -140,7 +191,7 @@ export default function GraphCanvas({
 }: {
   onNodeClick: (id: string) => void;
   onEdgeClick: (source: string, target: string) => void;
-  timeFilter: number;
+  dateRange: DateRange;
   kind?: "all" | "news" | "job";
   sizeFactor?: NodeSizeFactor;
   edgeSizeFactor?: EdgeSizeFactor;
@@ -161,12 +212,18 @@ export default function GraphCanvas({
     return () => observer.disconnect();
   }, []);
 
+  // Serialize the range to ISO strings (YYYY-MM-DD) for both the API call
+  // and the effect dependency array. Using Date objects directly in the
+  // deps array would refire on every render because identity changes.
+  const startIso = dateRange.start.toISOString().slice(0, 10);
+  const endIso = dateRange.end.toISOString().slice(0, 10);
+
   useEffect(() => {
     if (!hasDatabaseUrl(settings)) return;
 
     let cancelled = false;
 
-    fetch(`/api/graph?days=${timeFilter}&kind=${kind}`, {
+    fetch(`/api/graph?start=${startIso}&end=${endIso}&kind=${kind}`, {
       headers: buildDatabaseHeaders(settings),
     })
       .then(async (response) => {
@@ -191,7 +248,7 @@ export default function GraphCanvas({
           if (graph.hasNode(edge.source) && graph.hasNode(edge.target) && !graph.hasEdge(edge.id)) {
             graph.addEdgeWithKey(edge.id, edge.source, edge.target, {
               size: computeEdgeSize(edgeSizeFactor, edge),
-              color: edge.impact === "positive" ? "#10b981" : edge.impact === "negative" ? "#ef4444" : "#6b7280",
+              color: edgeColor(edge, dateRange),
               label: `${edge.eventCount} event(s)`,
             });
           }
@@ -208,7 +265,8 @@ export default function GraphCanvas({
     return () => {
       cancelled = true;
     };
-  }, [timeFilter, kind, sizeFactor, edgeSizeFactor, settings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startIso, endIso, kind, sizeFactor, edgeSizeFactor, settings]);
 
   if (missingDatabaseMessage || error) {
     return <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-gray-600 dark:text-gray-300">{missingDatabaseMessage || error}</div>;
@@ -218,7 +276,7 @@ export default function GraphCanvas({
 
   return (
     <SigmaContainer
-      key={`${timeFilter}-${kind}-${sizeFactor}-${edgeSizeFactor}-${graph.order}-${graph.size}`}
+      key={`${startIso}-${endIso}-${kind}-${sizeFactor}-${edgeSizeFactor}-${graph.order}-${graph.size}`}
       graph={graph}
       settings={{
         enableEdgeEvents: true,

@@ -27,16 +27,36 @@ export async function GET(req: Request) {
   try {
     prisma = createPrismaFromRequest(req);
     const { searchParams } = new URL(req.url);
-    const daysParam = searchParams.get("days");
-    const days = daysParam ? parseInt(daysParam, 10) : 30;
     const kind = (searchParams.get("kind") ?? "all") as "all" | "news" | "job";
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
+    // Date range: explicit start/end (ISO YYYY-MM-DD) replaces the 0.1.11
+    // `days=<N>` cutoff. If neither is provided we default to the last
+    // 1 year ending today, which matches the `defaultDateRange()` on the
+    // frontend.
+    const startParam = searchParams.get("start");
+    const endParam = searchParams.get("end");
+
+    const end = endParam ? new Date(endParam) : new Date();
+    const start = startParam
+      ? new Date(startParam)
+      : (() => {
+          const d = new Date(end);
+          d.setFullYear(d.getFullYear() - 1);
+          return d;
+        })();
+
+    // Guard against invalid dates. Prisma will happily accept an Invalid
+    // Date and return nothing — easier to surface a 400 here.
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid start/end date. Expected ISO YYYY-MM-DD." },
+        { status: 400 },
+      );
+    }
 
     const events = await prisma.event.findMany({
       where: {
-        date: { gte: cutoffDate },
+        date: { gte: start, lte: end },
         ...(kind !== "all" ? { category: kind } : {}),
       },
       include: {

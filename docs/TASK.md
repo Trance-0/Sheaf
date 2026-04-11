@@ -25,10 +25,6 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 
 ## Current Tasks
 
-- [ ] **Date range filter + event alpha fade.** Replace the start-only time scale
-  bar with a date range selector (start + end) using a simple calendar widget
-  on each side. Default to the last year. Fade edge alpha by the event's
-  distance from the query end date so older events visually recede.
 - [ ] **Settings import hardening + JobsConfig schema update.** Align
   `JobsConfig` with the shape in `sheaf-settings-2026-04-11.json`
   (`resumeURL`, `locationKeywords`, `jobKeywords`, `skillsKeywords`,
