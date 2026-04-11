@@ -11,6 +11,7 @@ import {
   type AppSettings,
   type EdgeSizeFactor,
   type NodeSizeFactor,
+  type SettingsIssues,
   type UserLevelOfExpertise,
 } from "@/lib/useAppSettings";
 
@@ -25,7 +26,15 @@ const EDGE_SIZE_FACTORS: { value: EdgeSizeFactor; label: string; hint: string }[
   { value: "event_count", label: "Event Count", hint: "Scale relationship thickness by the number of clustered events" },
 ];
 
-const EXPERTISE_LEVELS: UserLevelOfExpertise[] = ["intern", "junior", "mid", "senior", "staff", "principal"];
+const EXPERTISE_LEVELS: UserLevelOfExpertise[] = [
+  "intern/entry",
+  "intern",
+  "junior",
+  "mid",
+  "senior",
+  "staff",
+  "principal",
+];
 
 function listToText(items: string[]) {
   return items.join("\n");
@@ -45,8 +54,10 @@ function buildDraft(settings: AppSettings) {
     edgeSizeFactor: settings.edgeSizeFactor,
     databaseUrl: settings.databaseUrl,
     jobsEnabled: settings.jobsConfig.enabled,
-    userResumeURL: settings.jobsConfig.userResumeURL,
-    userJobKeywords: listToText(settings.jobsConfig.userJobKeywords),
+    resumeURL: settings.jobsConfig.resumeURL,
+    locationKeywords: listToText(settings.jobsConfig.locationKeywords),
+    jobKeywords: listToText(settings.jobsConfig.jobKeywords),
+    skillsKeywords: listToText(settings.jobsConfig.skillsKeywords),
     userLevelOfExpertise: settings.jobsConfig.userLevelOfExpertise,
     primaryEntityOfInterest: listToText(settings.researchConfig.primaryEntityOfInterest),
     newsSource: listToText(settings.researchConfig.newsSource),
@@ -59,6 +70,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [draft, setDraft] = useState(() => buildDraft(settings));
   const [status, setStatus] = useState<string>("");
   const [importMsg, setImportMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [importIssues, setImportIssues] = useState<SettingsIssues | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -74,8 +86,10 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
       databaseUrl: draft.databaseUrl.trim(),
       jobsConfig: {
         enabled: draft.jobsEnabled,
-        userResumeURL: draft.userResumeURL.trim(),
-        userJobKeywords: textToList(draft.userJobKeywords),
+        resumeURL: draft.resumeURL.trim(),
+        locationKeywords: textToList(draft.locationKeywords),
+        jobKeywords: textToList(draft.jobKeywords),
+        skillsKeywords: textToList(draft.skillsKeywords),
         userLevelOfExpertise: draft.userLevelOfExpertise,
       },
       researchConfig: {
@@ -106,12 +120,26 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
       const text = await file.text();
       const result = importSettingsJson(text);
       if (result.ok) {
-        setImportMsg({ kind: "ok", text: "Settings imported." });
+        setImportIssues(result.issues ?? null);
+        if (result.issues) {
+          const counts = [
+            result.issues.missing.length && `${result.issues.missing.length} missing`,
+            result.issues.unknown.length && `${result.issues.unknown.length} unknown`,
+            result.issues.typeMismatch.length && `${result.issues.typeMismatch.length} type mismatch`,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          setImportMsg({ kind: "ok", text: `Imported with warnings: ${counts}.` });
+        } else {
+          setImportMsg({ kind: "ok", text: "Settings imported." });
+        }
         setStatus("Imported settings are active locally.");
       } else {
-        setImportMsg({ kind: "err", text: result.error });
+        setImportIssues(null);
+        setImportMsg({ kind: "err", text: result.error ?? "Import failed" });
       }
     } catch (error: unknown) {
+      setImportIssues(null);
       setImportMsg({ kind: "err", text: error instanceof Error ? error.message : "Import failed" });
     }
   };
@@ -208,11 +236,19 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Resume URL</span>
-                  <input type="url" value={draft.userResumeURL} onChange={(e) => setDraft((prev) => ({ ...prev, userResumeURL: e.target.value }))} placeholder="https://resume.example.com" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <input type="url" value={draft.resumeURL} onChange={(e) => setDraft((prev) => ({ ...prev, resumeURL: e.target.value }))} placeholder="https://resume.example.com" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Job Keywords</span>
-                  <textarea value={draft.userJobKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, userJobKeywords: e.target.value }))} rows={4} placeholder="ai engineer&#10;systems&#10;security" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <textarea value={draft.jobKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, jobKeywords: e.target.value }))} rows={3} placeholder="software engineer&#10;ai engineer&#10;data scientist" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Location Keywords</span>
+                  <textarea value={draft.locationKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, locationKeywords: e.target.value }))} rows={3} placeholder="San Francisco&#10;San Jose&#10;Los Angeles" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Skills Keywords</span>
+                  <textarea value={draft.skillsKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, skillsKeywords: e.target.value }))} rows={4} placeholder="Python&#10;PyTorch&#10;CUDA" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Level of Expertise</span>
@@ -262,6 +298,25 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               }} />
             </div>
             {importMsg && <p className={`mt-2 text-xs ${importMsg.kind === "ok" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>{importMsg.text}</p>}
+            {importIssues && (
+              <div className="mt-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                {importIssues.typeMismatch.length > 0 && (
+                  <div>
+                    <span className="font-semibold">Type mismatches:</span> {importIssues.typeMismatch.join(", ")}
+                  </div>
+                )}
+                {importIssues.unknown.length > 0 && (
+                  <div>
+                    <span className="font-semibold">Unknown fields (ignored):</span> {importIssues.unknown.join(", ")}
+                  </div>
+                )}
+                {importIssues.missing.length > 0 && (
+                  <div>
+                    <span className="font-semibold">Missing fields (defaulted):</span> {importIssues.missing.join(", ")}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}

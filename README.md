@@ -21,16 +21,18 @@ The database URL is stored locally in the browser and sent with each API request
 
 ```json
 {
-  "version": "0.1.13",
+  "version": "0.1.16",
   "theme": "dark",
   "nodeSizeFactor": "market_cap",
   "edgeSizeFactor": "event_count",
   "databaseUrl": "postgres://<user>:<password>@<neon-region>.aws.neon.tech/neondb?sslmode=require",
   "jobsConfig": {
     "enabled": true,
-    "userResumeURL": "https://resume.<domain-name>.com",
-    "userJobKeywords": [],
-    "userLevelOfExpertise": "intern"
+    "resumeURL": "https://resume.<domain-name>.com",
+    "locationKeywords": ["San Francisco", "San Jose"],
+    "jobKeywords": ["Software Engineer", "AI Engineer"],
+    "skillsKeywords": ["Python", "PyTorch", "CUDA"],
+    "userLevelOfExpertise": "intern/entry"
   },
   "researchConfig": {
     "primaryEntityOfInterest": [

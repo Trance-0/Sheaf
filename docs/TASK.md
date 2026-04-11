@@ -25,13 +25,6 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 
 ## Current Tasks
 
-- [ ] **Settings import hardening + JobsConfig schema update.** Align
-  `JobsConfig` with the shape in `sheaf-settings-2026-04-11.json`
-  (`resumeURL`, `locationKeywords`, `jobKeywords`, `skillsKeywords`,
-  `userLevelOfExpertise: "intern/entry"`). Extend `importSettingsJson` to
-  report mismatched / unknown / missing field paths instead of silently
-  dropping them. Tolerate trailing-comma JSON. Fix the existing settings
-  file so it parses.
 - [ ] **Intern / new-grad job seed.** For each tech entity in the DB with a
   `jobPortal`, add job events narrowed to internships / new-grad roles,
   filtered by the `skillsKeywords` in the active settings file. Category
