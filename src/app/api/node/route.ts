@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { createPrismaFromRequest } from "@/lib/server/prismaFromRequest";
+import { backendUpgradeResponse } from "@/lib/server/backendErrors";
 
 export async function GET(req: Request) {
   let prisma: PrismaClient | undefined;
@@ -84,6 +85,8 @@ export async function GET(req: Request) {
       recentJobs,
     });
   } catch (error) {
+    const upgrade = backendUpgradeResponse(error);
+    if (upgrade) return upgrade;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load node" },
       { status: 400 },
@@ -145,6 +148,8 @@ export async function PATCH(req: Request) {
     });
     return NextResponse.json(updated);
   } catch (error) {
+    const upgrade = backendUpgradeResponse(error);
+    if (upgrade) return upgrade;
     const message = error instanceof Error ? error.message : "Entity not found";
     const status = message.includes("not found") ? 404 : 400;
     return NextResponse.json({ error: message }, { status });

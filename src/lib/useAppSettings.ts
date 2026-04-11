@@ -229,6 +229,17 @@ export function updateSettings(next: AppSettings | Partial<AppSettings>) {
   emit();
 }
 
+/**
+ * Non-hook accessor for the current settings snapshot. Used by
+ * `SettingsPanel` to re-seed its draft after `importSettingsJson`
+ * rewrites the store wholesale — the panel's auto-save effect is
+ * gated on a user-edit ref, so it can't rely on the `[settings]`
+ * subscription to pick up external mutations.
+ */
+export function getSettingsSnapshot(): AppSettings {
+  return state;
+}
+
 export function exportSettingsJson(): string {
   return JSON.stringify(normalizeSettings(state), null, 2);
 }

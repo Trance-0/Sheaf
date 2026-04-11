@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { createPrismaFromRequest } from "@/lib/server/prismaFromRequest";
+import { backendUpgradeResponse } from "@/lib/server/backendErrors";
 
 export async function GET(req: Request) {
   let prisma: PrismaClient | undefined;
@@ -85,6 +86,8 @@ export async function GET(req: Request) {
       totalCount: filtered.length,
     });
   } catch (error) {
+    const upgrade = backendUpgradeResponse(error);
+    if (upgrade) return upgrade;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to load jobs" },
       { status: 400 },

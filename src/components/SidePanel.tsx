@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Pencil, Check, Loader2, TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
 import { buildDatabaseHeaders, hasDatabaseUrl, useAppSettings } from "@/lib/useAppSettings";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface EventData {
   id: string;
@@ -105,7 +106,7 @@ export default function SidePanel({
     const headers = buildDatabaseHeaders(settings);
     if (selectedNode) {
       setLoading(true);
-      fetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, { headers })
+      apiFetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, { headers })
         .then(async (response) => {
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "Failed to load node");
@@ -116,7 +117,7 @@ export default function SidePanel({
         .finally(() => setLoading(false));
     } else if (selectedEdge) {
       setLoading(true);
-      fetch(`/api/edge?source=${encodeURIComponent(selectedEdge.source)}&target=${encodeURIComponent(selectedEdge.target)}`, { headers })
+      apiFetch(`/api/edge?source=${encodeURIComponent(selectedEdge.source)}&target=${encodeURIComponent(selectedEdge.target)}`, { headers })
         .then(async (response) => {
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "Failed to load edge");
@@ -147,7 +148,7 @@ export default function SidePanel({
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await fetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, {
+      const res = await apiFetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

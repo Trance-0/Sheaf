@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import SidePanel from "@/components/SidePanel";
 import SettingsPanel from "@/components/SettingsPanel";
+import BackendUpgradePrompt from "@/components/BackendUpgradePrompt";
 import DateRangeFilter, { defaultDateRange, type DateRange } from "@/components/DateRangeFilter";
 import { useAppSettings } from "@/lib/useAppSettings";
 import { Settings } from "lucide-react";
@@ -84,6 +85,11 @@ export default function Home() {
 
       {/* Settings Modal */}
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+
+      {/* Global "backend is out of sync" prompt. Mounted once here so
+          every API call on the page can trigger the same modal via the
+          custom window event dispatched by `apiFetch`. */}
+      <BackendUpgradePrompt />
     </main>
   );
 }

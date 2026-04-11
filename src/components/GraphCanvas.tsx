@@ -6,6 +6,7 @@ import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
 import { buildDatabaseHeaders, hasDatabaseUrl, type EdgeSizeFactor, type NodeSizeFactor, type AppSettings } from "@/lib/useAppSettings";
+import { apiFetch } from "@/lib/apiFetch";
 import type { DateRange } from "@/components/DateRangeFilter";
 
 interface GraphNode {
@@ -223,7 +224,7 @@ export default function GraphCanvas({
 
     let cancelled = false;
 
-    fetch(`/api/graph?start=${startIso}&end=${endIso}&kind=${kind}`, {
+    apiFetch(`/api/graph?start=${startIso}&end=${endIso}&kind=${kind}`, {
       headers: buildDatabaseHeaders(settings),
     })
       .then(async (response) => {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { X, Save, Moon, Sun, Download, Upload, Sparkles, Database, Briefcase, Search, Star } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { X, Moon, Sun, Download, Upload, Sparkles, Database, Briefcase, Search, Star } from "lucide-react";
 
 /**
  * Tiny inline GitHub mark. Lucide dropped its branded `Github` icon so
@@ -28,6 +28,7 @@ import {
   updateSettings,
   exportSettingsJson,
   importSettingsJson,
+  getSettingsSnapshot,
   type AppSettings,
   type EdgeSizeFactor,
   type NodeSizeFactor,
@@ -102,38 +103,82 @@ function buildDraft(settings: AppSettings) {
 export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const { settings } = useAppSettings();
   const [draft, setDraft] = useState(() => buildDraft(settings));
-  const [status, setStatus] = useState<string>("");
   const [importMsg, setImportMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [importIssues, setImportIssues] = useState<SettingsIssues | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
+  // 0.1.19 — the Save button was removed in favor of debounced
+  // auto-save. We can't just call `updateSettings` on every keystroke
+  // because that would re-trigger the `[settings]` subscription in
+  // every other consumer of `useAppSettings` for every character typed.
+  // Strategy: wait 400ms after the last user edit, then commit.
+  //
+  // The `isUserEditRef` gate is critical. Without it, these two
+  // effects would ping-pong:
+  //   1. A user keystroke fires the debounced save.
+  //   2. `updateSettings` normalizes + emits, which re-runs the
+  //      `[settings]` sync effect below, which overwrites the draft
+  //      with the normalized value, which re-fires the save effect.
+  // By flipping the ref only on user-origin edits (via `patchDraft`)
+  // and clearing it when the settings subscription seeds the draft
+  // from external state, we ensure the save effect only runs when the
+  // user — not the store — caused the latest draft change.
+  const isUserEditRef = useRef(false);
+
+  const patchDraft = useCallback((patch: Partial<typeof draft>) => {
+    isUserEditRef.current = true;
+    setDraft((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  // Seed the draft from the store whenever settings change from an
+  // outside source (hydration on first mount, or a JSON import). We
+  // gate on `isUserEditRef` so a just-committed auto-save doesn't loop
+  // back and wipe the user's in-flight edits.
+  //
+  // This is the legitimate "sync external store → local draft" case
+  // that effects exist for: `useAppSettings` hydrates from localStorage
+  // after mount, so our initial `useState` fallback doesn't see the
+  // persisted values. We intentionally suppress the cascading-render
+  // lint — the ref guard makes it idempotent after the first hydration.
   useEffect(() => {
+    if (isUserEditRef.current) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft(buildDraft(settings));
   }, [settings]);
 
-  const saveSettings = () => {
-    updateSettings({
-      version: SETTINGS_VERSION,
-      theme: draft.theme,
-      nodeSizeFactor: draft.nodeSizeFactor,
-      edgeSizeFactor: draft.edgeSizeFactor,
-      databaseUrl: draft.databaseUrl.trim(),
-      jobsConfig: {
-        enabled: draft.jobsEnabled,
-        resumeURL: draft.resumeURL.trim(),
-        locationKeywords: textToList(draft.locationKeywords),
-        jobKeywords: textToList(draft.jobKeywords),
-        skillsKeywords: textToList(draft.skillsKeywords),
-        userLevelOfExpertise: draft.userLevelOfExpertise,
-      },
-      researchConfig: {
-        primaryEntityOfInterest: textToList(draft.primaryEntityOfInterest),
-        newsSource: textToList(draft.newsSource),
-        newsRefreshPeriod: draft.newsRefreshPeriod.trim() || "0 * * * *",
-      },
-    });
-    setStatus("Saved locally. The app now uses this JSON-backed config directly; no server-side .env write is needed.");
-  };
+  // Debounced auto-save. Kicks in only when `isUserEditRef` is set,
+  // which means the latest `draft` change came from a user interaction
+  // in this panel — not from the sync effect above.
+  useEffect(() => {
+    if (!isUserEditRef.current) return;
+    const timer = window.setTimeout(() => {
+      updateSettings({
+        version: SETTINGS_VERSION,
+        theme: draft.theme,
+        nodeSizeFactor: draft.nodeSizeFactor,
+        edgeSizeFactor: draft.edgeSizeFactor,
+        databaseUrl: draft.databaseUrl.trim(),
+        jobsConfig: {
+          enabled: draft.jobsEnabled,
+          resumeURL: draft.resumeURL.trim(),
+          locationKeywords: textToList(draft.locationKeywords),
+          jobKeywords: textToList(draft.jobKeywords),
+          skillsKeywords: textToList(draft.skillsKeywords),
+          userLevelOfExpertise: draft.userLevelOfExpertise,
+        },
+        researchConfig: {
+          primaryEntityOfInterest: textToList(draft.primaryEntityOfInterest),
+          newsSource: textToList(draft.newsSource),
+          newsRefreshPeriod: draft.newsRefreshPeriod.trim() || "0 * * * *",
+        },
+      });
+      // Ref clears AFTER commit so the [settings] sync effect, which
+      // will fire on the next emit from `updateSettings`, knows to
+      // skip the reseed — our local draft already matches.
+      isUserEditRef.current = false;
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [draft]);
 
   const handleExport = () => {
     const json = exportSettingsJson();
@@ -167,7 +212,13 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
         } else {
           setImportMsg({ kind: "ok", text: "Settings imported." });
         }
-        setStatus("Imported settings are active locally.");
+        // Explicitly re-seed the draft from the freshly-imported
+        // snapshot. The normal `[settings]` sync effect would also do
+        // this, but only on the next render cycle — and only if the
+        // user-edit ref isn't set. Clearing the ref and reseeding here
+        // keeps the UI in immediate sync with the imported JSON.
+        isUserEditRef.current = false;
+        setDraft(buildDraft(getSettingsSnapshot()));
       } else {
         setImportIssues(null);
         setImportMsg({ kind: "err", text: result.error ?? "Import failed" });
@@ -195,10 +246,10 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-3">Appearance</h3>
             <div className="flex bg-black/5 dark:bg-black/20 rounded-lg p-1 gap-1">
-              <button className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm transition-all ${draft.theme === "light" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-300"}`} onClick={() => setDraft((prev) => ({ ...prev, theme: "light" }))}>
+              <button className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm transition-all ${draft.theme === "light" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-300"}`} onClick={() => patchDraft({ theme: "light" })}>
                 <Sun size={18} /> Light Mode
               </button>
-              <button className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm transition-all ${draft.theme === "dark" ? "bg-slate-800 text-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]" : "text-gray-500 hover:text-gray-700"}`} onClick={() => setDraft((prev) => ({ ...prev, theme: "dark" }))}>
+              <button className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm transition-all ${draft.theme === "dark" ? "bg-slate-800 text-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]" : "text-gray-500 hover:text-gray-700"}`} onClick={() => patchDraft({ theme: "dark" })}>
                 <Moon size={18} /> Dark Mode
               </button>
             </div>
@@ -214,7 +265,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Choose which signal drives node radius in the graph.</p>
               <div className="grid grid-cols-2 gap-2">
                 {NODE_SIZE_FACTORS.map((option) => (
-                  <button key={option.value} type="button" title={option.hint} onClick={() => setDraft((prev) => ({ ...prev, nodeSizeFactor: option.value }))} className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${draft.nodeSizeFactor === option.value ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300" : "border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-white/80 dark:hover:bg-white/10"}`}>
+                  <button key={option.value} type="button" title={option.hint} onClick={() => patchDraft({ nodeSizeFactor: option.value })} className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${draft.nodeSizeFactor === option.value ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300" : "border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-white/80 dark:hover:bg-white/10"}`}>
                     <div className="font-medium">{option.label}</div>
                     <div className="text-[0.7rem] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{option.hint}</div>
                   </button>
@@ -229,7 +280,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Relationship thickness is now part of the same local settings file.</p>
               <div className="grid grid-cols-1 gap-2">
                 {EDGE_SIZE_FACTORS.map((option) => (
-                  <button key={option.value} type="button" title={option.hint} onClick={() => setDraft((prev) => ({ ...prev, edgeSizeFactor: option.value }))} className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${draft.edgeSizeFactor === option.value ? "border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-300" : "border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-white/80 dark:hover:bg-white/10"}`}>
+                  <button key={option.value} type="button" title={option.hint} onClick={() => patchDraft({ edgeSizeFactor: option.value })} className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${draft.edgeSizeFactor === option.value ? "border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-300" : "border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-700 dark:text-gray-200 hover:bg-white/80 dark:hover:bg-white/10"}`}>
                     <div className="font-medium">{option.label}</div>
                     <div className="text-[0.7rem] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">{option.hint}</div>
                   </button>
@@ -248,7 +299,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               type="password"
               placeholder="postgres://user:password@region.aws.neon.tech/neondb?sslmode=require"
               value={draft.databaseUrl}
-              onChange={(e) => setDraft((prev) => ({ ...prev, databaseUrl: e.target.value }))}
+              onChange={(e) => patchDraft({ databaseUrl: e.target.value })}
               className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-lg text-gray-900 dark:text-white font-sans text-sm outline-none focus:border-blue-500 transition-colors"
             />
           </div>
@@ -262,28 +313,28 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               </h3>
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-                  <input type="checkbox" checked={draft.jobsEnabled} onChange={(e) => setDraft((prev) => ({ ...prev, jobsEnabled: e.target.checked }))} />
+                  <input type="checkbox" checked={draft.jobsEnabled} onChange={(e) => patchDraft({ jobsEnabled: e.target.checked })} />
                   Enable jobs mode
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Resume URL</span>
-                  <input type="url" value={draft.resumeURL} onChange={(e) => setDraft((prev) => ({ ...prev, resumeURL: e.target.value }))} placeholder="https://resume.example.com" className={FORM_FIELD_CLASS} />
+                  <input type="url" value={draft.resumeURL} onChange={(e) => patchDraft({ resumeURL: e.target.value })} placeholder="https://resume.example.com" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Job Keywords</span>
-                  <textarea value={draft.jobKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, jobKeywords: e.target.value }))} rows={3} placeholder="software engineer&#10;ai engineer&#10;data scientist" className={FORM_FIELD_CLASS} />
+                  <textarea value={draft.jobKeywords} onChange={(e) => patchDraft({ jobKeywords: e.target.value })} rows={3} placeholder="software engineer&#10;ai engineer&#10;data scientist" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Location Keywords</span>
-                  <textarea value={draft.locationKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, locationKeywords: e.target.value }))} rows={3} placeholder="San Francisco&#10;San Jose&#10;Los Angeles" className={FORM_FIELD_CLASS} />
+                  <textarea value={draft.locationKeywords} onChange={(e) => patchDraft({ locationKeywords: e.target.value })} rows={3} placeholder="San Francisco&#10;San Jose&#10;Los Angeles" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Skills Keywords</span>
-                  <textarea value={draft.skillsKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, skillsKeywords: e.target.value }))} rows={4} placeholder="Python&#10;PyTorch&#10;CUDA" className={FORM_FIELD_CLASS} />
+                  <textarea value={draft.skillsKeywords} onChange={(e) => patchDraft({ skillsKeywords: e.target.value })} rows={4} placeholder="Python&#10;PyTorch&#10;CUDA" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Level of Expertise</span>
-                  <select value={draft.userLevelOfExpertise} onChange={(e) => setDraft((prev) => ({ ...prev, userLevelOfExpertise: e.target.value as UserLevelOfExpertise }))} className={FORM_FIELD_CLASS}>
+                  <select value={draft.userLevelOfExpertise} onChange={(e) => patchDraft({ userLevelOfExpertise: e.target.value as UserLevelOfExpertise })} className={FORM_FIELD_CLASS}>
                     {EXPERTISE_LEVELS.map((level) => <option key={level} value={level} className={OPTION_CLASS}>{level}</option>)}
                   </select>
                 </label>
@@ -297,15 +348,15 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               <div className="space-y-3">
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Primary Entities of Interest</span>
-                  <textarea value={draft.primaryEntityOfInterest} onChange={(e) => setDraft((prev) => ({ ...prev, primaryEntityOfInterest: e.target.value }))} rows={8} className={FORM_FIELD_CLASS} />
+                  <textarea value={draft.primaryEntityOfInterest} onChange={(e) => patchDraft({ primaryEntityOfInterest: e.target.value })} rows={8} className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">News Sources</span>
-                  <textarea value={draft.newsSource} onChange={(e) => setDraft((prev) => ({ ...prev, newsSource: e.target.value }))} rows={3} placeholder="Leave empty to use default sources" className={FORM_FIELD_CLASS} />
+                  <textarea value={draft.newsSource} onChange={(e) => patchDraft({ newsSource: e.target.value })} rows={3} placeholder="Leave empty to use default sources" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">News Refresh Period</span>
-                  <input type="text" value={draft.newsRefreshPeriod} onChange={(e) => setDraft((prev) => ({ ...prev, newsRefreshPeriod: e.target.value }))} placeholder="0 * * * *" className={FORM_FIELD_CLASS} />
+                  <input type="text" value={draft.newsRefreshPeriod} onChange={(e) => patchDraft({ newsRefreshPeriod: e.target.value })} placeholder="0 * * * *" className={FORM_FIELD_CLASS} />
                 </label>
               </div>
             </div>
@@ -373,13 +424,6 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex justify-end flex-shrink-0">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity" onClick={saveSettings}>
-            <Save size={16} /> Save Local Configuration
-          </button>
         </div>
       </div>
     </div>
