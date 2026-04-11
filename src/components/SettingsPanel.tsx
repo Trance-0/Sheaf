@@ -1,7 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, Save, Moon, Sun, Download, Upload, Sparkles, Database, Briefcase, Search } from "lucide-react";
+import { X, Save, Moon, Sun, Download, Upload, Sparkles, Database, Briefcase, Search, Star } from "lucide-react";
+
+/**
+ * Tiny inline GitHub mark. Lucide dropped its branded `Github` icon so
+ * we ship a minimal SVG instead of pulling another icon dependency just
+ * for the footer link.
+ */
+function GitHubMark({ size = 12 }: { size?: number }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d="M12 .5C5.73.5.77 5.46.77 11.73c0 4.96 3.22 9.16 7.68 10.65.56.1.77-.25.77-.54 0-.27-.01-.98-.02-1.92-3.12.68-3.79-1.5-3.79-1.5-.51-1.3-1.25-1.64-1.25-1.64-1.02-.7.08-.69.08-.69 1.13.08 1.72 1.16 1.72 1.16 1 1.72 2.63 1.22 3.27.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.54 0-1.22.44-2.22 1.16-3-.12-.28-.5-1.43.11-2.98 0 0 .94-.3 3.09 1.15a10.7 10.7 0 0 1 2.81-.38c.95 0 1.91.13 2.81.38 2.15-1.45 3.09-1.15 3.09-1.15.61 1.55.23 2.7.11 2.98.72.78 1.16 1.78 1.16 3 0 4.3-2.63 5.26-5.13 5.54.4.35.76 1.02.76 2.07 0 1.5-.01 2.7-.01 3.07 0 .29.2.65.78.54 4.46-1.5 7.67-5.69 7.67-10.65C23.23 5.46 18.27.5 12 .5Z" />
+    </svg>
+  );
+}
 import {
   SETTINGS_VERSION,
   useAppSettings,
@@ -35,6 +55,20 @@ const EXPERTISE_LEVELS: UserLevelOfExpertise[] = [
   "staff",
   "principal",
 ];
+
+// Shared input styling so every <input>/<textarea>/<select> in the Jobs
+// and Research columns follows the same theme contract. The previous
+// version was missing the explicit text color — native form elements
+// default to black and became unreadable in dark mode against the dark
+// translucent background. `[color-scheme]` hints make the native select
+// arrow and date picker match the theme too.
+const FORM_FIELD_CLASS =
+  "mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-blue-500 transition-colors [color-scheme:light] dark:[color-scheme:dark]";
+
+// <option> elements do NOT inherit the parent <select>'s background in
+// most browsers — we have to set it explicitly so the dropdown list
+// matches the app theme instead of popping as white-on-white.
+const OPTION_CLASS = "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-100";
 
 function listToText(items: string[]) {
   return items.join("\n");
@@ -210,9 +244,6 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
               <Database size={14} className="text-emerald-500" /> Database Connection
             </h3>
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300 mb-3">
-              Sheaf no longer rewrites <code>.env</code> through the backend. The database URL lives in your local settings JSON and is sent with each request.
-            </p>
             <input
               type="password"
               placeholder="postgres://user:password@region.aws.neon.tech/neondb?sslmode=require"
@@ -236,24 +267,24 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Resume URL</span>
-                  <input type="url" value={draft.resumeURL} onChange={(e) => setDraft((prev) => ({ ...prev, resumeURL: e.target.value }))} placeholder="https://resume.example.com" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <input type="url" value={draft.resumeURL} onChange={(e) => setDraft((prev) => ({ ...prev, resumeURL: e.target.value }))} placeholder="https://resume.example.com" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Job Keywords</span>
-                  <textarea value={draft.jobKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, jobKeywords: e.target.value }))} rows={3} placeholder="software engineer&#10;ai engineer&#10;data scientist" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <textarea value={draft.jobKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, jobKeywords: e.target.value }))} rows={3} placeholder="software engineer&#10;ai engineer&#10;data scientist" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Location Keywords</span>
-                  <textarea value={draft.locationKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, locationKeywords: e.target.value }))} rows={3} placeholder="San Francisco&#10;San Jose&#10;Los Angeles" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <textarea value={draft.locationKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, locationKeywords: e.target.value }))} rows={3} placeholder="San Francisco&#10;San Jose&#10;Los Angeles" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Skills Keywords</span>
-                  <textarea value={draft.skillsKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, skillsKeywords: e.target.value }))} rows={4} placeholder="Python&#10;PyTorch&#10;CUDA" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <textarea value={draft.skillsKeywords} onChange={(e) => setDraft((prev) => ({ ...prev, skillsKeywords: e.target.value }))} rows={4} placeholder="Python&#10;PyTorch&#10;CUDA" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Level of Expertise</span>
-                  <select value={draft.userLevelOfExpertise} onChange={(e) => setDraft((prev) => ({ ...prev, userLevelOfExpertise: e.target.value as UserLevelOfExpertise }))} className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm">
-                    {EXPERTISE_LEVELS.map((level) => <option key={level} value={level}>{level}</option>)}
+                  <select value={draft.userLevelOfExpertise} onChange={(e) => setDraft((prev) => ({ ...prev, userLevelOfExpertise: e.target.value as UserLevelOfExpertise }))} className={FORM_FIELD_CLASS}>
+                    {EXPERTISE_LEVELS.map((level) => <option key={level} value={level} className={OPTION_CLASS}>{level}</option>)}
                   </select>
                 </label>
               </div>
@@ -266,15 +297,15 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               <div className="space-y-3">
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Primary Entities of Interest</span>
-                  <textarea value={draft.primaryEntityOfInterest} onChange={(e) => setDraft((prev) => ({ ...prev, primaryEntityOfInterest: e.target.value }))} rows={8} className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <textarea value={draft.primaryEntityOfInterest} onChange={(e) => setDraft((prev) => ({ ...prev, primaryEntityOfInterest: e.target.value }))} rows={8} className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">News Sources</span>
-                  <textarea value={draft.newsSource} onChange={(e) => setDraft((prev) => ({ ...prev, newsSource: e.target.value }))} rows={3} placeholder="Leave empty to use default sources" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <textarea value={draft.newsSource} onChange={(e) => setDraft((prev) => ({ ...prev, newsSource: e.target.value }))} rows={3} placeholder="Leave empty to use default sources" className={FORM_FIELD_CLASS} />
                 </label>
                 <label className="block">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">News Refresh Period</span>
-                  <input type="text" value={draft.newsRefreshPeriod} onChange={(e) => setDraft((prev) => ({ ...prev, newsRefreshPeriod: e.target.value }))} placeholder="0 * * * *" className="mt-1 w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm" />
+                  <input type="text" value={draft.newsRefreshPeriod} onChange={(e) => setDraft((prev) => ({ ...prev, newsRefreshPeriod: e.target.value }))} placeholder="0 * * * *" className={FORM_FIELD_CLASS} />
                 </label>
               </div>
             </div>
@@ -317,6 +348,29 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                 )}
               </div>
             )}
+            {/* Tiny project link + star-if-you-like affordance. Keeps the
+                footer unobtrusive but gives the single user (and anyone
+                they hand a build to) a one-click path to the repo. */}
+            <div className="mt-3 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <a
+                href="https://github.com/Trance-0/Sheaf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              >
+                <GitHubMark size={12} />
+                <span>Trance-0/Sheaf</span>
+              </a>
+              <a
+                href="https://github.com/Trance-0/Sheaf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-white/5 hover:bg-amber-500/10 hover:border-amber-500/40 hover:text-amber-700 dark:hover:text-amber-300 transition-colors"
+              >
+                <Star size={12} />
+                <span>Star if you like it</span>
+              </a>
+            </div>
           </div>
 
           {status && <p className="text-sm text-emerald-600 dark:text-emerald-400">{status}</p>}

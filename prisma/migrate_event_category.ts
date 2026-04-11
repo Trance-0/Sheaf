@@ -12,12 +12,14 @@
  * for rows where it is currently NULL.
  *
  * Run with:  npx tsx prisma/migrate_event_category.ts
+ *
+ * 0.1.18: exported `runEventCategoryMigration(prisma)` so
+ * `migrate_auto.ts` can compose it with other migrations under a shared
+ * Prisma client + shared confirmation prompt.
  */
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-async function main() {
+export async function runEventCategoryMigration(prisma: PrismaClient): Promise<void> {
   // 1) Jobs: events with exactly one EventEntity row whose entity is an agency.
   const jobCount = await prisma.$executeRawUnsafe(`
     UPDATE "Event"
@@ -63,11 +65,19 @@ async function main() {
   }
 }
 
-main()
-  .catch(e => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Standalone CLI entrypoint. Only runs when the file is invoked directly
+// via `tsx prisma/migrate_event_category.ts`, not when imported by
+// migrate_auto.ts. We key off process.argv[1] resolving to this file's
+// path, which `tsx` passes through as an absolute OS path.
+const invokedDirectly = process.argv[1] && /migrate_event_category\.ts$/.test(process.argv[1]);
+if (invokedDirectly) {
+  const prisma = new PrismaClient();
+  runEventCategoryMigration(prisma)
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

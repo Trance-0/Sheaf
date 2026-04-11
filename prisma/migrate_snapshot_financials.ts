@@ -19,24 +19,26 @@
  * — new code reads the explicit columns; old rows stay queryable.
  *
  * Run with:  npx tsx prisma/migrate_snapshot_financials.ts
+ *
+ * 0.1.18: exported `runSnapshotFinancialsMigration(prisma)` so
+ * `migrate_auto.ts` can compose it with other migrations under a shared
+ * Prisma client + shared confirmation prompt.
  */
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
-
-async function addColumn(name: string, type: string) {
+async function addColumn(prisma: PrismaClient, name: string, type: string) {
   const sql = `ALTER TABLE "EntitySnapshot" ADD COLUMN IF NOT EXISTS "${name}" ${type};`;
   await prisma.$executeRawUnsafe(sql);
   console.log(`  + column ${name} ${type}`);
 }
 
-async function main() {
+export async function runSnapshotFinancialsMigration(prisma: PrismaClient): Promise<void> {
   console.log('EntitySnapshot financial columns:');
-  await addColumn('marketCapUsd', 'DOUBLE PRECISION');
-  await addColumn('employeeCount', 'INTEGER');
-  await addColumn('freeCashFlow', 'DOUBLE PRECISION');
-  await addColumn('sourceName', 'TEXT');
-  await addColumn('sourceUrl', 'TEXT');
+  await addColumn(prisma, 'marketCapUsd', 'DOUBLE PRECISION');
+  await addColumn(prisma, 'employeeCount', 'INTEGER');
+  await addColumn(prisma, 'freeCashFlow', 'DOUBLE PRECISION');
+  await addColumn(prisma, 'sourceName', 'TEXT');
+  await addColumn(prisma, 'sourceUrl', 'TEXT');
 
   console.log('\nUnique constraint (entityId, date):');
   // CREATE UNIQUE INDEX IF NOT EXISTS is safer than ALTER TABLE ADD
@@ -54,11 +56,18 @@ async function main() {
   console.log(`\nEntitySnapshot currently holds ${rows[0].count} rows.`);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Standalone CLI entrypoint. Only runs when invoked directly via
+// `tsx prisma/migrate_snapshot_financials.ts`, not when imported by
+// migrate_auto.ts.
+const invokedDirectly = process.argv[1] && /migrate_snapshot_financials\.ts$/.test(process.argv[1]);
+if (invokedDirectly) {
+  const prisma = new PrismaClient();
+  runSnapshotFinancialsMigration(prisma)
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
