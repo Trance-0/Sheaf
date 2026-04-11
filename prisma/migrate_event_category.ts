@@ -54,9 +54,9 @@ async function main() {
   console.log(`[category=news fallback] updated ${newsFallback} events`);
 
   // Summary
-  const rows = await prisma.$queryRawUnsafe<{ category: string | null; count: bigint }[]>(`
+  const rows = await prisma.$queryRawUnsafe(`
     SELECT "category", COUNT(*)::bigint AS count FROM "Event" GROUP BY "category" ORDER BY "category";
-  `);
+  `) as { category: string | null; count: bigint }[];
   console.log('\nFinal distribution:');
   for (const r of rows) {
     console.log(`  ${r.category ?? '(null)'}: ${r.count}`);

@@ -1,20 +1,10 @@
 "use client";
 
-/**
- * Tiny singleton-backed settings store for the Sheaf frontend.
- *
- * Persists to `localStorage['sheaf-settings-v1']` on every update, and
- * publishes to subscribers via `useSyncExternalStore` so multiple
- * components stay in sync within a single page-load. Exposed mutators
- * (`updateSettings`, `importSettingsJson`) are plain module functions —
- * SettingsPanel writes, page.tsx / GraphCanvas / SidePanel read.
- *
- * Why not Context: we only have two or three consumers and they all sit
- * inside `app/page.tsx`; a module-level store keeps the wiring honest
- * without forcing every component that needs `theme` or
- * `nodeSizeFactor` to thread a provider.
- */
 import { useEffect, useSyncExternalStore } from "react";
+
+export const SETTINGS_VERSION = "0.1.13";
+const STORAGE_KEY = "sheaf-settings-v2";
+const DB_HEADER = "x-sheaf-database-url";
 
 export type NodeSizeFactor =
   | "event_count"
@@ -22,15 +12,75 @@ export type NodeSizeFactor =
   | "employee_count"
   | "free_cash_flow";
 
-export interface AppSettings {
-  theme: "dark" | "light";
-  nodeSizeFactor: NodeSizeFactor;
+export type EdgeSizeFactor = "event_count";
+export type UserLevelOfExpertise = "intern" | "junior" | "mid" | "senior" | "staff" | "principal";
+
+export interface JobsConfig {
+  enabled: boolean;
+  userResumeURL: string;
+  userJobKeywords: string[];
+  userLevelOfExpertise: UserLevelOfExpertise;
 }
 
-const STORAGE_KEY = "sheaf-settings-v1";
+export interface ResearchConfig {
+  primaryEntityOfInterest: string[];
+  newsSource: string[];
+  newsRefreshPeriod: string;
+}
+
+export interface AppSettings {
+  version: string;
+  theme: "dark" | "light";
+  nodeSizeFactor: NodeSizeFactor;
+  edgeSizeFactor: EdgeSizeFactor;
+  databaseUrl: string;
+  jobsConfig: JobsConfig;
+  researchConfig: ResearchConfig;
+}
+
 const DEFAULTS: AppSettings = {
+  version: SETTINGS_VERSION,
   theme: "dark",
-  nodeSizeFactor: "event_count",
+  nodeSizeFactor: "market_cap",
+  edgeSizeFactor: "event_count",
+  databaseUrl: "",
+  jobsConfig: {
+    enabled: true,
+    userResumeURL: "",
+    userJobKeywords: [],
+    userLevelOfExpertise: "intern",
+  },
+  researchConfig: {
+    primaryEntityOfInterest: [
+      "anthropic",
+      "x",
+      "microsoft",
+      "google",
+      "aws",
+      "crowdstrike",
+      "nvidia",
+      "openai",
+      "jpmorgan",
+      "apple",
+      "amazon",
+      "linux foundation",
+      "intel",
+      "meta",
+      "palantir",
+      "salesforce",
+      "uber",
+      "amd",
+      "ibm",
+      "figma",
+      "adobe",
+      "slack",
+      "tiktok",
+      "TSMC",
+      "bytedance",
+    ],
+    newsSource: [],
+    newsRefreshPeriod: "0 * * * *",
+  },
 };
 
 let state: AppSettings = { ...DEFAULTS };
@@ -38,7 +88,7 @@ let hydrated = false;
 const listeners = new Set<() => void>();
 
 function emit() {
-  for (const l of listeners) l();
+  for (const listener of listeners) listener();
 }
 
 function applyTheme(theme: AppSettings["theme"]) {
@@ -47,16 +97,80 @@ function applyTheme(theme: AppSettings["theme"]) {
   else document.documentElement.classList.remove("dark");
 }
 
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter(Boolean);
+}
+
+function normalizeTheme(value: unknown): AppSettings["theme"] {
+  return value === "light" ? "light" : "dark";
+}
+
+function normalizeNodeSizeFactor(value: unknown): NodeSizeFactor {
+  return value === "event_count" || value === "market_cap" || value === "employee_count" || value === "free_cash_flow"
+    ? value
+    : DEFAULTS.nodeSizeFactor;
+}
+
+function normalizeEdgeSizeFactor(value: unknown): EdgeSizeFactor {
+  return value === "event_count" ? value : DEFAULTS.edgeSizeFactor;
+}
+
+function normalizeLevel(value: unknown): UserLevelOfExpertise {
+  return value === "junior" || value === "mid" || value === "senior" || value === "staff" || value === "principal"
+    ? value
+    : "intern";
+}
+
+function normalizeUrl(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeCron(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : DEFAULTS.researchConfig.newsRefreshPeriod;
+}
+
+function normalizeSettings(value: unknown): AppSettings {
+  const parsed = typeof value === "object" && value !== null ? (value as Partial<AppSettings>) : {};
+  const jobs: Partial<JobsConfig> = typeof parsed.jobsConfig === "object" && parsed.jobsConfig !== null ? parsed.jobsConfig : {};
+  const research: Partial<ResearchConfig> = typeof parsed.researchConfig === "object" && parsed.researchConfig !== null ? parsed.researchConfig : {};
+
+  return {
+    version: SETTINGS_VERSION,
+    theme: normalizeTheme(parsed.theme),
+    nodeSizeFactor: normalizeNodeSizeFactor(parsed.nodeSizeFactor),
+    edgeSizeFactor: normalizeEdgeSizeFactor(parsed.edgeSizeFactor),
+    databaseUrl: normalizeUrl(parsed.databaseUrl),
+    jobsConfig: {
+      enabled: typeof jobs.enabled === "boolean" ? jobs.enabled : DEFAULTS.jobsConfig.enabled,
+      userResumeURL: normalizeUrl(jobs.userResumeURL),
+      userJobKeywords: asStringArray(jobs.userJobKeywords),
+      userLevelOfExpertise: normalizeLevel(jobs.userLevelOfExpertise),
+    },
+    researchConfig: {
+      primaryEntityOfInterest: asStringArray(research.primaryEntityOfInterest).length
+        ? asStringArray(research.primaryEntityOfInterest)
+        : [...DEFAULTS.researchConfig.primaryEntityOfInterest],
+      newsSource: asStringArray(research.newsSource),
+      newsRefreshPeriod: normalizeCron(research.newsRefreshPeriod),
+    },
+  };
+}
+
+function persist() {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
 function hydrate() {
   if (hydrated || typeof window === "undefined") return;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<AppSettings>;
-      state = { ...DEFAULTS, ...parsed };
-    }
+    state = raw ? normalizeSettings(JSON.parse(raw)) : { ...DEFAULTS, jobsConfig: { ...DEFAULTS.jobsConfig }, researchConfig: { ...DEFAULTS.researchConfig, primaryEntityOfInterest: [...DEFAULTS.researchConfig.primaryEntityOfInterest], newsSource: [] } };
   } catch {
-    // Corrupt JSON in localStorage — fall back to defaults.
+    state = { ...DEFAULTS, jobsConfig: { ...DEFAULTS.jobsConfig }, researchConfig: { ...DEFAULTS.researchConfig, primaryEntityOfInterest: [...DEFAULTS.researchConfig.primaryEntityOfInterest], newsSource: [] } };
   }
   applyTheme(state.theme);
   hydrated = true;
@@ -65,9 +179,7 @@ function hydrate() {
 
 function subscribe(cb: () => void) {
   listeners.add(cb);
-  return () => {
-    listeners.delete(cb);
-  };
+  return () => listeners.delete(cb);
 }
 
 function getSnapshot() {
@@ -75,53 +187,47 @@ function getSnapshot() {
 }
 
 function getServerSnapshot(): AppSettings {
-  // Server render always sees defaults; real state is applied on hydrate.
   return DEFAULTS;
 }
 
-export function updateSettings(patch: Partial<AppSettings>) {
-  state = { ...state, ...patch };
+export function updateSettings(next: AppSettings | Partial<AppSettings>) {
+  state = normalizeSettings({ ...state, ...next });
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      persist();
     } catch {
-      // Storage quota or privacy mode — silently drop.
+      // Ignore storage failures.
     }
-    if (patch.theme !== undefined) applyTheme(state.theme);
   }
+  applyTheme(state.theme);
   emit();
 }
 
 export function exportSettingsJson(): string {
-  return JSON.stringify(state, null, 2);
+  return JSON.stringify(normalizeSettings(state), null, 2);
 }
 
 export function importSettingsJson(json: string): { ok: true } | { ok: false; error: string } {
   try {
-    const parsed = JSON.parse(json) as Partial<AppSettings>;
-    if (typeof parsed !== "object" || parsed === null) {
-      return { ok: false, error: "Expected a JSON object at the top level" };
-    }
-    // Only accept keys we know about; silently ignore the rest.
-    const next: AppSettings = { ...DEFAULTS };
-    if (parsed.theme === "dark" || parsed.theme === "light") next.theme = parsed.theme;
-    if (
-      parsed.nodeSizeFactor === "event_count" ||
-      parsed.nodeSizeFactor === "market_cap" ||
-      parsed.nodeSizeFactor === "employee_count" ||
-      parsed.nodeSizeFactor === "free_cash_flow"
-    ) {
-      next.nodeSizeFactor = parsed.nodeSizeFactor;
-    }
-    updateSettings(next);
+    const parsed = JSON.parse(json);
+    updateSettings(normalizeSettings(parsed));
     return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Invalid JSON" };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Invalid JSON" };
   }
 }
 
+export function buildDatabaseHeaders(settings: Pick<AppSettings, "databaseUrl">): HeadersInit {
+  return settings.databaseUrl.trim()
+    ? { [DB_HEADER]: settings.databaseUrl.trim() }
+    : {};
+}
+
+export function hasDatabaseUrl(settings: Pick<AppSettings, "databaseUrl">): boolean {
+  return settings.databaseUrl.trim().length > 0;
+}
+
 export function useAppSettings() {
-  // Hydrate from localStorage after mount so SSR markup matches the server snapshot.
   useEffect(() => {
     hydrate();
   }, []);

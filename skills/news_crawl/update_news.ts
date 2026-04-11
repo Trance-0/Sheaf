@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +17,7 @@ Usage:
   }
 
   if (command === 'add-news') {
-    const [_, entity1Name, entity2Name, eventTitle, url, publishedAt, description] = args;
+    const [, entity1Name, entity2Name, eventTitle, url, publishedAt, description] = args;
     if (!entity1Name || !entity2Name || !eventTitle || !url || !publishedAt) {
       console.error("Error: Missing required arguments. Expected: entity1, entity2, eventTitle, url, publishedAt");
       process.exit(1);
@@ -56,7 +56,7 @@ Usage:
             { entities: { some: { entityId: slug1 } } },
             { entities: { some: { entityId: slug2 } } },
           ],
-          OR: keywords.map(kw => ({ title: { contains: kw, mode: 'insensitive' as Prisma.QueryMode } })),
+          OR: keywords.map((kw) => ({ title: { contains: kw, mode: 'insensitive' } })),
         },
         take: 1,
       });
@@ -110,8 +110,10 @@ Usage:
       },
       orderBy: { date: 'desc' },
     });
+    type ListedEvent = (typeof events)[number];
+    type ListedEventEntity = ListedEvent['entities'][number];
     for (const ev of events) {
-      const entities = ev.entities.map(ee => ee.entity.name).join(', ');
+      const entities = ev.entities.map((ee: ListedEventEntity) => ee.entity.name).join(', ');
       console.log(`[${ev.date.toISOString().split('T')[0]}] ${ev.title} (${entities}) — ${ev.articles.length} article(s)`);
     }
 

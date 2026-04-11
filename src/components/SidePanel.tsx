@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Pencil, Check, Loader2, TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
+import { buildDatabaseHeaders, hasDatabaseUrl, useAppSettings } from "@/lib/useAppSettings";
 
 interface EventData {
   id: string;
@@ -42,7 +43,6 @@ interface NodeData {
 
 type NodeTab = "events" | "jobs";
 
-/** Human-friendly short form for large USD amounts (1.2B, 450M, 3.4K). */
 function formatUsd(v: number | null): string | null {
   if (v === null || v === undefined) return null;
   const abs = Math.abs(v);
@@ -70,17 +70,15 @@ export default function SidePanel({
   selectedEdge: { source: string; target: string } | null;
   onClose: () => void;
 }) {
+  const { settings } = useAppSettings();
   const [nodeData, setNodeData] = useState<NodeData | null>(null);
   const [edgeEvents, setEdgeEvents] = useState<EventData[]>([]);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-  // For the node view's recent-events list we want a two-step interaction:
-  // first click expands the card, second click (while expanded) opens the
-  // source article. Track the expanded one separately from edgeEvents.
   const [expandedRecent, setExpandedRecent] = useState<string | null>(null);
   const [nodeTab, setNodeTab] = useState<NodeTab>("events");
   const [loading, setLoading] = useState(false);
+  const [panelError, setPanelError] = useState<string | null>(null);
 
-  // Inline-edit state for node view
   const [editing, setEditing] = useState(false);
   const [editHomepage, setEditHomepage] = useState("");
   const [editJobPortal, setEditJobPortal] = useState("");
@@ -96,23 +94,39 @@ export default function SidePanel({
     setNodeTab("events");
     setEditing(false);
     setSaveError(null);
+    setPanelError(null);
 
+    if (!selectedNode && !selectedEdge) return;
+    if (!hasDatabaseUrl(settings)) {
+      setPanelError("Add your database URL in Settings before loading entity or event details.");
+      return;
+    }
+
+    const headers = buildDatabaseHeaders(settings);
     if (selectedNode) {
       setLoading(true);
-      fetch(`/api/node?id=${encodeURIComponent(selectedNode)}`)
-        .then(r => r.json())
-        .then(d => setNodeData(d))
-        .catch(console.error)
+      fetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, { headers })
+        .then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Failed to load node");
+          return data;
+        })
+        .then((data) => setNodeData(data))
+        .catch((error) => setPanelError(error instanceof Error ? error.message : "Failed to load node"))
         .finally(() => setLoading(false));
     } else if (selectedEdge) {
       setLoading(true);
-      fetch(`/api/edge?source=${encodeURIComponent(selectedEdge.source)}&target=${encodeURIComponent(selectedEdge.target)}`)
-        .then(r => r.json())
-        .then(d => setEdgeEvents(d.events ?? []))
-        .catch(console.error)
+      fetch(`/api/edge?source=${encodeURIComponent(selectedEdge.source)}&target=${encodeURIComponent(selectedEdge.target)}`, { headers })
+        .then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || "Failed to load edge");
+          return data;
+        })
+        .then((data) => setEdgeEvents(data.events ?? []))
+        .catch((error) => setPanelError(error instanceof Error ? error.message : "Failed to load edge"))
         .finally(() => setLoading(false));
     }
-  }, [selectedNode, selectedEdge]);
+  }, [selectedNode, selectedEdge, settings]);
 
   const startEdit = () => {
     if (!nodeData) return;
@@ -135,27 +149,27 @@ export default function SidePanel({
     try {
       const res = await fetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...buildDatabaseHeaders(settings),
+        },
         body: JSON.stringify({
           homepage: editHomepage,
           jobPortal: editJobPortal,
           description: editDescription,
         }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Save failed (${res.status})`);
-      }
-      const updated = await res.json();
-      setNodeData(prev => prev ? {
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload.error || `Save failed (${res.status})`);
+      setNodeData((prev) => prev ? {
         ...prev,
-        homepage: updated.homepage,
-        jobPortal: updated.jobPortal,
-        description: updated.description,
+        homepage: payload.homepage,
+        jobPortal: payload.jobPortal,
+        description: payload.description,
       } : prev);
       setEditing(false);
-    } catch (e: unknown) {
-      setSaveError(e instanceof Error ? e.message : "Save failed");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -165,12 +179,9 @@ export default function SidePanel({
 
   return (
     <aside className="w-[420px] h-full bg-slate-50/80 dark:bg-slate-900/40 backdrop-blur-xl border-l border-slate-200 dark:border-white/10 shadow-2xl flex flex-col z-10 overflow-y-auto transition-transform duration-300">
-      {/* Header */}
       <div className="p-6 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
         <h2 className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent truncate pr-4">
-          {selectedNode
-            ? nodeData?.name || selectedNode
-            : `${selectedEdge?.source} ↔ ${selectedEdge?.target}`}
+          {selectedNode ? nodeData?.name || selectedNode : `${selectedEdge?.source} ↔ ${selectedEdge?.target}`}
         </h2>
         <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-900 hover:bg-black/5 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/10 transition-colors flex-shrink-0" onClick={onClose}>
           <X size={20} />
@@ -179,11 +190,10 @@ export default function SidePanel({
 
       <div className="p-6 flex flex-col gap-5">
         {loading && <p className="text-sm text-gray-400 animate-pulse">Loading...</p>}
+        {panelError && <p className="text-sm text-red-500 dark:text-red-400">{panelError}</p>}
 
-        {/* ===== NODE VIEW ===== */}
-        {selectedNode && nodeData && (
+        {selectedNode && nodeData && !panelError && (
           <>
-            {/* Type badge + edit toggle */}
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wide bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400">
                 {nodeData.type}
@@ -200,318 +210,174 @@ export default function SidePanel({
             </div>
 
             {editing ? (
-              /* EDIT FORM */
               <div className="flex flex-col gap-3">
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Description</span>
-                  <textarea
-                    value={editDescription}
-                    onChange={e => setEditDescription(e.target.value)}
-                    rows={3}
-                    placeholder="Short description of the entity"
-                    className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                  />
+                  <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} placeholder="Short description of the entity" className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Homepage URL</span>
-                  <input
-                    type="url"
-                    value={editHomepage}
-                    onChange={e => setEditHomepage(e.target.value)}
-                    placeholder="https://example.com"
-                    className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                  />
+                  <input type="url" value={editHomepage} onChange={(e) => setEditHomepage(e.target.value)} placeholder="https://example.com" className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                 </label>
                 <label className="flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Job Portal URL</span>
-                  <input
-                    type="url"
-                    value={editJobPortal}
-                    onChange={e => setEditJobPortal(e.target.value)}
-                    placeholder="https://example.com/careers"
-                    className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                  />
+                  <input type="url" value={editJobPortal} onChange={(e) => setEditJobPortal(e.target.value)} placeholder="https://example.com/careers" className="w-full px-3 py-2 rounded-lg bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-sm text-gray-800 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                 </label>
-                {saveError && (
-                  <p className="text-xs text-red-500 dark:text-red-400">{saveError}</p>
-                )}
+                {saveError && <p className="text-xs text-red-500 dark:text-red-400">{saveError}</p>}
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={saveEdit}
-                    disabled={saving}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-sm font-medium transition-colors"
-                  >
+                  <button onClick={saveEdit} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-sm font-medium transition-colors">
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                     {saving ? "Saving…" : "Save"}
                   </button>
-                  <button
-                    onClick={cancelEdit}
-                    disabled={saving}
-                    className="px-3 py-1.5 rounded-md text-sm text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                  >
+                  <button onClick={cancelEdit} disabled={saving} className="px-3 py-1.5 rounded-md text-sm text-gray-600 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
                     Cancel
                   </button>
                 </div>
               </div>
             ) : (
               <>
-                {/* Description */}
-                {nodeData.description && (
-                  <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{nodeData.description}</p>
-                )}
+                {nodeData.description && <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{nodeData.description}</p>}
 
-                {/* Links: Homepage + Job Portal */}
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {nodeData.homepage && (
-                    <a href={nodeData.homepage} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200">
-                      <Globe size={14} className="text-blue-500 flex-shrink-0" />
-                      <span className="truncate">{nodeData.homepage}</span>
-                      <ExternalLink size={12} className="text-gray-400 ml-auto flex-shrink-0" />
+                    <a href={nodeData.homepage} target="_blank" rel="noreferrer" className="glass-panel rounded-xl p-3 flex items-center gap-3 hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
+                      <Globe size={16} className="text-blue-500" />
+                      <div className="min-w-0">
+                        <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Homepage</div>
+                        <div className="text-sm font-medium truncate text-gray-800 dark:text-gray-100">Open site</div>
+                      </div>
+                      <ExternalLink size={14} className="ml-auto text-gray-400" />
                     </a>
                   )}
                   {nodeData.jobPortal && (
-                    <a href={nodeData.jobPortal} target="_blank" rel="noopener noreferrer"
-                       className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200">
-                      <Briefcase size={14} className="text-emerald-500 flex-shrink-0" />
-                      <span className="truncate">Job Portal</span>
-                      <ExternalLink size={12} className="text-gray-400 ml-auto flex-shrink-0" />
+                    <a href={nodeData.jobPortal} target="_blank" rel="noreferrer" className="glass-panel rounded-xl p-3 flex items-center gap-3 hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
+                      <Briefcase size={16} className="text-emerald-500" />
+                      <div className="min-w-0">
+                        <div className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Jobs</div>
+                        <div className="text-sm font-medium truncate text-gray-800 dark:text-gray-100">Open portal</div>
+                      </div>
+                      <ExternalLink size={14} className="ml-auto text-gray-400" />
                     </a>
                   )}
-                  {!nodeData.description && !nodeData.homepage && !nodeData.jobPortal && (
-                    <p className="text-xs text-gray-400 italic">No description, homepage, or job portal set. Click Edit to add.</p>
-                  )}
                 </div>
-              </>
-            )}
 
-            {/* Financial snapshot — only renders when at least one stat is
-                set. The values are static for now (0.1.11); growth-over-time
-                will land when we start capturing daily EntitySnapshot rows. */}
-            {(nodeData.marketCapUsd !== null || nodeData.employeeCount !== null || nodeData.freeCashFlow !== null || nodeData.stockTicker || nodeData.foundedYear !== null) && (
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Key Stats</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {nodeData.stockTicker && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <TrendingUp size={14} className="text-blue-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[0.65rem] uppercase tracking-wider text-gray-400">Ticker</p>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{nodeData.stockTicker}</p>
-                      </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {nodeData.marketCapUsd !== null && (
+                    <div className="glass-panel rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400"><TrendingUp size={12} /> Market Cap</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{formatUsd(nodeData.marketCapUsd)}</div>
                     </div>
                   )}
-                  {formatUsd(nodeData.marketCapUsd) && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <DollarSign size={14} className="text-emerald-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[0.65rem] uppercase tracking-wider text-gray-400">Market Cap</p>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{formatUsd(nodeData.marketCapUsd)}</p>
-                      </div>
+                  {nodeData.employeeCount !== null && (
+                    <div className="glass-panel rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400"><Users size={12} /> Employees</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{formatCount(nodeData.employeeCount)}</div>
                     </div>
                   )}
-                  {formatUsd(nodeData.freeCashFlow) && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <DollarSign size={14} className={`${(nodeData.freeCashFlow ?? 0) >= 0 ? "text-emerald-500" : "text-red-500"} flex-shrink-0`} />
-                      <div className="min-w-0">
-                        <p className="text-[0.65rem] uppercase tracking-wider text-gray-400">Free Cash Flow</p>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{formatUsd(nodeData.freeCashFlow)}</p>
-                      </div>
-                    </div>
-                  )}
-                  {formatCount(nodeData.employeeCount) && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <Users size={14} className="text-purple-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[0.65rem] uppercase tracking-wider text-gray-400">Employees</p>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{formatCount(nodeData.employeeCount)}</p>
-                      </div>
+                  {nodeData.freeCashFlow !== null && (
+                    <div className="glass-panel rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400"><DollarSign size={12} /> Free Cash Flow</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{formatUsd(nodeData.freeCashFlow)}</div>
                     </div>
                   )}
                   {nodeData.foundedYear !== null && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                      <Calendar size={14} className="text-amber-500 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[0.65rem] uppercase tracking-wider text-gray-400">Founded</p>
-                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{nodeData.foundedYear}</p>
-                      </div>
+                    <div className="glass-panel rounded-xl p-3">
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400"><Calendar size={12} /> Founded</div>
+                      <div className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{nodeData.foundedYear}</div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
 
-            {/* Events / Jobs tabs — each list supports first-click-expand,
-                second-click-open-source. The job crawl feeds the Jobs tab
-                via the Event.category='job' discriminator. */}
-            {(nodeData.recentEvents.length > 0 || nodeData.recentJobs.length > 0) && (
-              <div className="mt-1">
-                <div className="flex bg-black/5 dark:bg-black/20 rounded-lg p-1 gap-1 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => { setNodeTab("events"); setExpandedRecent(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-all
-                      ${nodeTab === "events"
-                        ? "bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm"
-                        : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
-                  >
-                    <Newspaper size={12} /> Events
-                    <span className="text-[0.65rem] opacity-70">({nodeData.recentEvents.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setNodeTab("jobs"); setExpandedRecent(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition-all
-                      ${nodeTab === "jobs"
-                        ? "bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm"
-                        : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
-                  >
-                    <Briefcase size={12} /> Jobs
-                    <span className="text-[0.65rem] opacity-70">({nodeData.recentJobs.length})</span>
-                  </button>
+                <div className="flex items-center gap-2 rounded-xl bg-black/5 dark:bg-white/5 p-1">
+                  {(["events", "jobs"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setNodeTab(tab)}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${nodeTab === tab ? "bg-white dark:bg-slate-800 text-gray-900 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"}`}
+                    >
+                      {tab === "events" ? "News" : "Jobs"}
+                    </button>
+                  ))}
                 </div>
 
-                {(() => {
-                  const rows = nodeTab === "events" ? nodeData.recentEvents : nodeData.recentJobs;
-                  if (rows.length === 0) {
+                <div className="flex flex-col gap-3">
+                  {(nodeTab === "events" ? nodeData.recentEvents : nodeData.recentJobs).map((event) => {
+                    const expanded = expandedRecent === event.eventId;
                     return (
-                      <p className="text-xs italic text-gray-400 px-1">
-                        {nodeTab === "events" ? "No recent events." : "No job postings tracked."}
-                      </p>
-                    );
-                  }
-                  return (
-                    <ul className="flex flex-col gap-1.5">
-                      {rows.map(ev => {
-                        const isOpen = expandedRecent === ev.eventId;
-                        const handleTitleClick = () => {
-                          if (!isOpen) {
-                            setExpandedRecent(ev.eventId);
-                            return;
-                          }
-                          if (ev.primaryArticleUrl) {
-                            window.open(ev.primaryArticleUrl, "_blank", "noopener,noreferrer");
-                          }
-                        };
-                        return (
-                          <li key={ev.eventId} className="rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden bg-white/50 dark:bg-white/5">
-                            <button
-                              type="button"
-                              onClick={handleTitleClick}
-                              title={isOpen ? (ev.primaryArticleUrl ? "Click again to open source" : "No source URL attached") : "Click to expand"}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-sm text-gray-700 dark:text-gray-200"
-                            >
-                              {isOpen ? <ChevronDown size={12} className="text-gray-400 flex-shrink-0" /> : <ChevronRight size={12} className="text-gray-400 flex-shrink-0" />}
-                              <span className={`truncate flex-1 ${isOpen ? "underline decoration-dotted underline-offset-4" : ""}`}>{ev.title}</span>
-                              <span className="text-xs text-gray-400 flex-shrink-0">{new Date(ev.date).toLocaleDateString()}</span>
-                            </button>
-                            {isOpen && (
-                              <div className="px-3 pb-3 pt-1 border-t border-slate-200 dark:border-white/10 bg-white/30 dark:bg-black/10">
-                                {ev.description ? (
-                                  <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300 mb-2">{ev.description}</p>
-                                ) : (
-                                  <p className="text-xs italic text-gray-400 mb-2">No description recorded for this event.</p>
-                                )}
-                                {ev.primaryArticleUrl ? (
-                                  <div className="flex items-center gap-2 text-[0.7rem] text-gray-500 dark:text-gray-400">
-                                    <Newspaper size={11} className="flex-shrink-0" />
-                                    <span className="truncate flex-1">
-                                      Source: {ev.primaryArticleProvider || new URL(ev.primaryArticleUrl).hostname}
-                                    </span>
-                                    <span className="text-blue-500 dark:text-blue-400 font-medium">click title to open →</span>
-                                  </div>
-                                ) : (
-                                  <p className="text-[0.7rem] italic text-gray-400">No source article attached.</p>
-                                )}
-                              </div>
+                      <div key={event.eventId} className="glass-panel rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (expanded && event.primaryArticleUrl) {
+                              window.open(event.primaryArticleUrl, "_blank", "noopener,noreferrer");
+                              return;
+                            }
+                            setExpandedRecent(expanded ? null : event.eventId);
+                          }}
+                          className="w-full px-4 py-3 flex items-start gap-3 text-left"
+                        >
+                          <Newspaper size={16} className="mt-0.5 text-blue-500 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{event.title}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(event.date).toLocaleDateString()}</div>
+                          </div>
+                          {expanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                        </button>
+                        {expanded && (
+                          <div className="px-4 pb-4 text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                            {event.description && <p>{event.description}</p>}
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Articles: {event.articleCount}</div>
+                            {event.primaryArticleUrl && (
+                              <a href={event.primaryArticleUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
+                                Open primary source <ExternalLink size={12} />
+                              </a>
                             )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  );
-                })()}
-              </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </>
         )}
 
-        {/* ===== EDGE VIEW ===== */}
-        {selectedEdge && !loading && (
-          <>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {edgeEvents.length} event(s) linking these entities
-            </p>
-
-            <ul className="flex flex-col gap-2">
-              {edgeEvents.map(event => {
-                const isExpanded = expandedEvent === event.id;
-                return (
-                  <li key={event.id} className="rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden">
-                    {/* Event header — click to expand */}
-                    <button
-                      onClick={() => setExpandedEvent(isExpanded ? null : event.id)}
-                      className="w-full flex items-center gap-2 px-4 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 transition-colors text-left"
-                    >
-                      {isExpanded ? <ChevronDown size={14} className="text-gray-400 flex-shrink-0" /> : <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{event.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{new Date(event.date).toLocaleDateString()} · {event.articles.length} source(s)</p>
-                      </div>
-                    </button>
-
-                    {/* Expanded: description + articles */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 pt-2 border-t border-slate-200 dark:border-white/10 bg-white/30 dark:bg-black/10">
-                        {event.description && (
-                          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300 mb-3">{event.description}</p>
-                        )}
-
-                        {/* Impact scores */}
-                        {event.impactScores.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            {event.impactScores.map(s => (
-                              <span key={s.entity} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-300">
-                                {s.entity}: <span className={`font-bold ${(s.s5w ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : (s.s5w ?? 0) < 0 ? 'text-red-500' : 'text-gray-400'}`}>{s.s5w ?? '—'}</span>
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Articles list */}
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Sources</h4>
-                        <ul className="flex flex-col gap-1">
-                          {event.articles.map(a => (
-                            <li key={a.id}>
-                              <a
-                                href={a.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm text-gray-700 dark:text-gray-200"
-                              >
-                                <Newspaper size={12} className="text-gray-400 flex-shrink-0" />
-                                <span className="truncate flex-1">{a.title}</span>
-                                <span className="text-[0.65rem] text-gray-400 flex-shrink-0">{a.provider || ''}</span>
-                                <ExternalLink size={10} className="text-gray-400 flex-shrink-0" />
-                              </a>
-                            </li>
-                          ))}
-                          {event.articles.length === 0 && (
-                            <li className="text-xs text-gray-400 italic px-3">No articles linked yet</li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-
-              {edgeEvents.length === 0 && (
-                <li className="text-sm text-gray-400 italic">No events found for this edge.</li>
+        {selectedEdge && !panelError && edgeEvents.map((event) => {
+          const expanded = expandedEvent === event.id;
+          return (
+            <div key={event.id} className="glass-panel rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedEvent(expanded ? null : event.id)}
+                className="w-full px-4 py-3 flex items-start gap-3 text-left"
+              >
+                <Newspaper size={16} className="mt-0.5 text-blue-500 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{event.title}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(event.date).toLocaleDateString()}</div>
+                </div>
+                {expanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+              </button>
+              {expanded && (
+                <div className="px-4 pb-4 text-sm text-gray-600 dark:text-gray-300 space-y-3">
+                  {event.description && <p>{event.description}</p>}
+                  {event.articles.length > 0 && (
+                    <div className="space-y-2">
+                      {event.articles.map((article) => (
+                        <a key={article.id} href={article.url} target="_blank" rel="noreferrer" className="block rounded-lg bg-white/60 dark:bg-white/5 px-3 py-2 hover:bg-white dark:hover:bg-white/10 transition-colors">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{article.title}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{article.provider || "Unknown source"}</div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
-            </ul>
-          </>
-        )}
+            </div>
+          );
+        })}
       </div>
     </aside>
   );
