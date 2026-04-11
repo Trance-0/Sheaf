@@ -1,0 +1,266 @@
+{
+  "_comment": "Hand-curated intern / new-grad programs for tech entities that have a `jobPortal` set in the database. Used by skills/job_crawl/seed_intern_entry_jobs.ts to produce category='job' events narrowed by the active settings file's jobsConfig.skillsKeywords. Each program carries a `relevantSkills` tag array drawn from the skillsKeywords vocabulary (Python, Java, C++, JavaScript, ...). URLs are the entity's canonical careers/university page with a program-specific query param or path where known; dedup is by article URL so the query param keeps different programs on the same host unique.",
+  "programs": [
+    {
+      "entityId": "alphabet",
+      "title": "Google STEP Intern (Student Training in Engineering Program)",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/?employment_type=INTERN&target_level=EARLY",
+      "postedAt": "2025-09-15",
+      "level": "intern",
+      "description": "Google's early-career internship for 1st/2nd-year students, focused on foundational software engineering in C++, Java, Python, and JavaScript.",
+      "relevantSkills": ["Python", "Java", "C++", "JavaScript", "Data Structures & Algorithms", "SQL", "Linux", "Git"]
+    },
+    {
+      "entityId": "alphabet",
+      "title": "Google University Graduate Software Engineer (New-Grad)",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/?employment_type=FULL_TIME&target_level=EARLY",
+      "postedAt": "2025-09-01",
+      "level": "new-grad",
+      "description": "New-grad SWE role across Google's AI, Cloud, and core product teams. Strong DS&A fundamentals required.",
+      "relevantSkills": ["Python", "Java", "C++", "JavaScript", "Data Structures & Algorithms", "SQL", "Linux", "Git", "Machine Learning"]
+    },
+    {
+      "entityId": "microsoft",
+      "title": "Microsoft Software Engineer Intern",
+      "url": "https://careers.microsoft.com/students/us/en/us-university-internships?target=intern",
+      "postedAt": "2025-08-20",
+      "level": "intern",
+      "description": "Summer internship across Azure, Windows, Office, and AI divisions. Focus on production systems.",
+      "relevantSkills": ["C++", "Python", "Java", "JavaScript", "Data Structures & Algorithms", "AWS", "Docker", "Kubernetes", "Linux", "Windows", "Operating Systems"]
+    },
+    {
+      "entityId": "microsoft",
+      "title": "Microsoft Aspire Program (New-Grad Rotational)",
+      "url": "https://careers.microsoft.com/students/us/en/us-aspireprogram",
+      "postedAt": "2025-09-10",
+      "level": "new-grad",
+      "description": "Two-year rotational program for new grads joining Microsoft's engineering org. Includes AI-for-Good and Azure rotations.",
+      "relevantSkills": ["Python", "Java", "C++", "Machine Learning", "Deep Learning", "Kubernetes", "AWS", "SQL"]
+    },
+    {
+      "entityId": "apple",
+      "title": "Apple Software Engineering Internship",
+      "url": "https://www.apple.com/careers/us/students.html?team=software-and-services",
+      "postedAt": "2025-09-05",
+      "level": "intern",
+      "description": "Summer internship across Core OS, Services, and Hardware Engineering. Strong C++/Swift and Unix fundamentals expected.",
+      "relevantSkills": ["C++", "Python", "Operating Systems", "Linux", "Git", "Data Structures & Algorithms"]
+    },
+    {
+      "entityId": "meta",
+      "title": "Meta University Software Engineer Intern",
+      "url": "https://www.metacareers.com/careerprograms/pathways/metauniversity",
+      "postedAt": "2025-08-15",
+      "level": "intern",
+      "description": "Nine-week summer internship for rising juniors, focused on full-stack and mobile development.",
+      "relevantSkills": ["JavaScript", "Python", "HTML", "CSS", "Data Structures & Algorithms", "SQL"]
+    },
+    {
+      "entityId": "meta",
+      "title": "Meta University Graduate Software Engineer",
+      "url": "https://www.metacareers.com/jobs?q=new%20grad%20software%20engineer",
+      "postedAt": "2025-09-20",
+      "level": "new-grad",
+      "description": "New-grad SWE role across Family of Apps and Reality Labs. DSA + one of Python/C++/JS strongly expected.",
+      "relevantSkills": ["Python", "C++", "JavaScript", "Data Structures & Algorithms", "Machine Learning", "SQL"]
+    },
+    {
+      "entityId": "amazon",
+      "title": "Amazon SDE Intern (Software Development Engineer)",
+      "url": "https://www.amazon.jobs/en/business_categories/student-programs?employment-type=intern",
+      "postedAt": "2025-09-12",
+      "level": "intern",
+      "description": "Summer SDE internship across AWS, Alexa, Prime Video, and Retail. DS&A-heavy interview loop.",
+      "relevantSkills": ["Java", "Python", "C++", "Data Structures & Algorithms", "AWS", "SQL", "Linux", "Docker"]
+    },
+    {
+      "entityId": "amazon",
+      "title": "Amazon SDE New-Grad (Propel rotational path)",
+      "url": "https://www.amazon.jobs/en/business_categories/university-grads?employment-type=full-time",
+      "postedAt": "2025-10-01",
+      "level": "new-grad",
+      "description": "Full-time SDE role for recent grads, with Propel rotational option across AWS and Retail.",
+      "relevantSkills": ["Java", "Python", "AWS", "SQL", "Data Structures & Algorithms", "Kubernetes", "Docker"]
+    },
+    {
+      "entityId": "aws",
+      "title": "AWS SDE Intern (Cloud Infrastructure)",
+      "url": "https://www.amazon.jobs/en/teams/aws?employment-type=intern",
+      "postedAt": "2025-09-12",
+      "level": "intern",
+      "description": "AWS-specific SDE internship on services like EC2, S3, Lambda, Bedrock, and SageMaker.",
+      "relevantSkills": ["Java", "Python", "C++", "AWS", "Linux", "Kubernetes", "Docker", "SQL", "Operating Systems"]
+    },
+    {
+      "entityId": "nvidia",
+      "title": "Nvidia Deep Learning Research Intern",
+      "url": "https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/?team=research",
+      "postedAt": "2025-10-05",
+      "level": "intern",
+      "description": "Research internship on generative models, robotics, and CUDA kernel optimization inside Nvidia Research.",
+      "relevantSkills": ["Python", "CUDA", "PyTorch", "Deep Learning", "Machine Learning", "Computer Vision", "Linear Algebra", "Probability", "Statistics"]
+    },
+    {
+      "entityId": "nvidia",
+      "title": "Nvidia New-Grad Software Engineer (CUDA & Systems)",
+      "url": "https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/?team=engineering",
+      "postedAt": "2025-09-18",
+      "level": "new-grad",
+      "description": "New-grad systems SWE role working on CUDA runtime, cuDNN, and TensorRT.",
+      "relevantSkills": ["C++", "CUDA", "Linux", "Operating Systems", "Data Structures & Algorithms"]
+    },
+    {
+      "entityId": "intel",
+      "title": "Intel Undergraduate Software Engineering Intern",
+      "url": "https://jobs.intel.com/en/students?category=software",
+      "postedAt": "2025-09-01",
+      "level": "intern",
+      "description": "Undergraduate SWE internship across Intel's data center and AI software stack (oneAPI, OpenVINO).",
+      "relevantSkills": ["C++", "Python", "Linux", "CUDA", "Operating Systems", "Machine Learning"]
+    },
+    {
+      "entityId": "amd",
+      "title": "AMD Software Engineering Intern (ROCm & AI Stack)",
+      "url": "https://careers.amd.com/careers-home/students?category=software",
+      "postedAt": "2025-09-08",
+      "level": "intern",
+      "description": "Summer internship on ROCm, MIOpen, and AI compiler work targeting MI300/MI325 GPUs.",
+      "relevantSkills": ["C++", "Python", "CUDA", "Linux", "Deep Learning", "PyTorch"]
+    },
+    {
+      "entityId": "oracle",
+      "title": "Oracle Graduate Software Engineer",
+      "url": "https://www.oracle.com/corporate/careers/students-grads/?role=software-engineer",
+      "postedAt": "2025-09-25",
+      "level": "new-grad",
+      "description": "New-grad SWE role in Oracle Cloud Infrastructure (OCI), database engineering, or SaaS apps.",
+      "relevantSkills": ["Java", "SQL", "Python", "Kubernetes", "Linux", "Docker"]
+    },
+    {
+      "entityId": "ibm",
+      "title": "IBM Accelerate: Software Engineering Intern",
+      "url": "https://www.ibm.com/careers/us-en/early-career/students/?program=accelerate-software-engineering",
+      "postedAt": "2025-09-02",
+      "level": "intern",
+      "description": "IBM Accelerate learning-and-build intern track on watsonx, OpenShift, and Red Hat stack.",
+      "relevantSkills": ["Python", "Java", "Kubernetes", "Docker", "Linux", "Machine Learning"]
+    },
+    {
+      "entityId": "adobe",
+      "title": "Adobe Software Engineering Intern",
+      "url": "https://adobe.com/careers/university.html?role=software-engineer",
+      "postedAt": "2025-09-10",
+      "level": "intern",
+      "description": "Summer SWE internship across Creative Cloud, Document Cloud, and Adobe Research (Firefly).",
+      "relevantSkills": ["JavaScript", "Python", "C++", "HTML", "CSS", "Machine Learning", "Computer Vision"]
+    },
+    {
+      "entityId": "adobe",
+      "title": "Adobe Research Scientist Intern (Firefly / Multimodal)",
+      "url": "https://adobe.com/careers/university.html?role=research-scientist",
+      "postedAt": "2025-10-12",
+      "level": "intern",
+      "description": "Adobe Research internship on diffusion models, multimodal generation, and video synthesis.",
+      "relevantSkills": ["Python", "PyTorch", "Deep Learning", "Computer Vision", "Machine Learning", "Linear Algebra", "Probability"]
+    },
+    {
+      "entityId": "salesforce",
+      "title": "Salesforce Futureforce Intern (Software Engineering)",
+      "url": "https://www.salesforce.com/company/careers/university-recruiting/?role=intern",
+      "postedAt": "2025-09-14",
+      "level": "intern",
+      "description": "Futureforce University internship across the Salesforce platform, Data Cloud, and Einstein AI.",
+      "relevantSkills": ["Java", "JavaScript", "Python", "SQL", "AWS", "Machine Learning"]
+    },
+    {
+      "entityId": "uber",
+      "title": "Uber University Engineering Intern",
+      "url": "https://www.uber.com/us/en/careers/university/?job=engineering-intern",
+      "postedAt": "2025-09-06",
+      "level": "intern",
+      "description": "Summer engineering internship across Rides, Eats, and Autonomous Mobility. Strong backend systems focus.",
+      "relevantSkills": ["Java", "Python", "Go", "SQL", "Kubernetes", "Docker", "Linux"]
+    },
+    {
+      "entityId": "figma",
+      "title": "Figma Early-Career Software Engineer (New-Grad)",
+      "url": "https://www.figma.com/careers/?type=early-career",
+      "postedAt": "2025-09-22",
+      "level": "new-grad",
+      "description": "New-grad SWE role at Figma spanning multiplayer infra, web rendering, and the Figma AI team.",
+      "relevantSkills": ["JavaScript", "C++", "HTML", "CSS", "Data Structures & Algorithms"]
+    },
+    {
+      "entityId": "tiktok",
+      "title": "TikTok Software Engineer Intern (Recommendation & ML Infra)",
+      "url": "https://careers.tiktok.com/position?category=2&type=3&keyword=intern",
+      "postedAt": "2025-09-28",
+      "level": "intern",
+      "description": "Summer internship at TikTok on recommendation systems, ML infra, and content-understanding models.",
+      "relevantSkills": ["Python", "C++", "Machine Learning", "Deep Learning", "NLP", "SQL", "Kubernetes"]
+    },
+    {
+      "entityId": "bytedance",
+      "title": "ByteDance University New-Grad SWE",
+      "url": "https://jobs.bytedance.com/en/position?category=6704215862603155722&type=3",
+      "postedAt": "2025-10-03",
+      "level": "new-grad",
+      "description": "ByteDance new-grad SWE role across TikTok, CapCut, Lark, and Doubao LLM infrastructure.",
+      "relevantSkills": ["Python", "C++", "Java", "Machine Learning", "Deep Learning", "NLP", "SQL"]
+    },
+    {
+      "entityId": "palantir",
+      "title": "Palantir PATH Internship (Forward Deployed Software Engineer)",
+      "url": "https://jobs.lever.co/palantir?team=Internships",
+      "postedAt": "2025-09-04",
+      "level": "intern",
+      "description": "Palantir's PATH internship for Forward Deployed and Product Development Engineers working on Foundry and AIP.",
+      "relevantSkills": ["Python", "Java", "TypeScript", "SQL", "Linux", "Data Structures & Algorithms"]
+    },
+    {
+      "entityId": "crowdstrike",
+      "title": "CrowdStrike University Software Engineer Intern",
+      "url": "https://www.crowdstrike.com/en-us/careers/university/?role=intern",
+      "postedAt": "2025-09-11",
+      "level": "intern",
+      "description": "University internship on Falcon endpoint agents, detection infrastructure, and cloud security.",
+      "relevantSkills": ["Python", "C++", "Linux", "Operating Systems", "AWS", "Docker", "Kubernetes"]
+    },
+    {
+      "entityId": "anthropic",
+      "title": "Anthropic Research Engineer Intern",
+      "url": "https://www.anthropic.com/careers?team=research-intern",
+      "postedAt": "2025-10-18",
+      "level": "intern",
+      "description": "Anthropic research engineering internship on alignment, interpretability, and Claude training infrastructure.",
+      "relevantSkills": ["Python", "PyTorch", "Deep Learning", "Machine Learning", "Reinforcement Learning", "Linear Algebra", "Probability", "Statistics", "NLP"]
+    },
+    {
+      "entityId": "openai",
+      "title": "OpenAI Research Engineer Residency",
+      "url": "https://openai.com/careers?team=residency",
+      "postedAt": "2025-10-20",
+      "level": "new-grad",
+      "description": "Six-month residency for early-career researchers to transition into full-time research engineer roles at OpenAI.",
+      "relevantSkills": ["Python", "PyTorch", "Machine Learning", "Deep Learning", "Reinforcement Learning", "CUDA", "NLP", "Linear Algebra", "Probability"]
+    },
+    {
+      "entityId": "jpmorgan",
+      "title": "JPMorgan Chase Software Engineer Intern Program",
+      "url": "https://careers.jpmorgan.com/us/en/students/programs?program=software-engineer-program",
+      "postedAt": "2025-09-16",
+      "level": "intern",
+      "description": "Summer SWE internship across CIB, Consumer Bank, and AI Research — infrastructure, trading platforms, and LLM apps.",
+      "relevantSkills": ["Java", "Python", "SQL", "AWS", "Data Structures & Algorithms", "Machine Learning"]
+    },
+    {
+      "entityId": "tsmc",
+      "title": "TSMC IC Design / EDA Software Intern",
+      "url": "https://www.tsmc.com/english/careers/students?role=software",
+      "postedAt": "2025-09-25",
+      "level": "intern",
+      "description": "TSMC internship on EDA tooling, design automation, and lithography modeling software.",
+      "relevantSkills": ["C++", "Python", "Linux", "CUDA"]
+    }
+  ]
+}

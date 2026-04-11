@@ -25,7 +25,6 @@ PAUSE WHEN CREDIT LIMIT RUNS OUT BEFORE CONTINUE THE NEXT TASK
 
 ## Current Tasks
 
-- [ ] **Intern / new-grad job seed.** For each tech entity in the DB with a
-  `jobPortal`, add job events narrowed to internships / new-grad roles,
-  filtered by the `skillsKeywords` in the active settings file. Category
-  stays `'job'`.
+_(No pending tasks — v0.1.15, 0.1.16, and 0.1.17 landed the date range filter,
+settings import hardening, and intern/new-grad job seed from the 2026-04-10
+task batch.)_
