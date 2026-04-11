@@ -89,11 +89,37 @@ model Article {
 model EntitySnapshot {
   id         String   @id @default(uuid())
   entityId   String
+  // Date stamp for the point-in-time financial snapshot. Backfill script
+  // uses the first day of each month (UTC) so monthly series align cleanly.
   date       DateTime
+
+  // Legacy 0.1.x fields — kept for backward compatibility with any
+  // existing rows. New code should read the explicit financial columns
+  // below instead.
   netWorth   Float?
   growth     Float?
   statusText String?
-  entity     Entity   @relation(fields: [entityId], references: [id])
+
+  // 0.1.13 time-series financial columns. All nullable so we can record
+  // only what we know — e.g. stock price gives us marketCapUsd but not
+  // employees, private companies give us employees but no marketCap, etc.
+  marketCapUsd  Float?
+  employeeCount Int?
+  freeCashFlow  Float?
+
+  // Provenance: where the data point came from. `sourceName` is a short
+  // human label ("Yahoo Finance", "SEC 10-K", "TechCrunch"), `sourceUrl`
+  // is a direct link to the underlying source so every point is
+  // auditable. Required by the TASK.md "keep the most credible one, with
+  // source link for each data point" instruction.
+  sourceName String?
+  sourceUrl  String?
+
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  // One snapshot per entity per day — upsert on this composite key so
+  // re-runs of the backfill script are idempotent.
+  @@unique([entityId, date])
 }
 
 model CacheCard {

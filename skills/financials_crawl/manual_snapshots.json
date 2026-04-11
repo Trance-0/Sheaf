@@ -1,0 +1,99 @@
+{
+  "_comment": "Hand-curated time-series financial snapshots for entities where Yahoo Finance can't give us the whole picture. Employees and FCF come from SEC 10-K annual filings; private company valuations come from funding-round press releases. Every point MUST carry a sourceName + sourceUrl so it can be audited. Merged into EntitySnapshot by seed_historical_financials.ts via upsert on (entityId, date).",
+  "snapshots": [
+    { "entityId": "apple", "date": "2015-09-30", "employeeCount": 110000, "freeCashFlow": 69778000000, "sourceName": "Apple 10-K FY2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/320193/000119312515356351/d17062d10k.htm" },
+    { "entityId": "apple", "date": "2018-09-29", "employeeCount": 132000, "freeCashFlow": 64121000000, "sourceName": "Apple 10-K FY2018", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/320193/000032019318000145/a10-k20189292018.htm" },
+    { "entityId": "apple", "date": "2021-09-25", "employeeCount": 154000, "freeCashFlow": 92953000000, "sourceName": "Apple 10-K FY2021", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/320193/000032019321000105/aapl-20210925.htm" },
+    { "entityId": "apple", "date": "2023-09-30", "employeeCount": 161000, "freeCashFlow": 99584000000, "sourceName": "Apple 10-K FY2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm" },
+
+    { "entityId": "microsoft", "date": "2016-06-30", "employeeCount": 114000, "freeCashFlow": 24982000000, "sourceName": "Microsoft 10-K FY2016", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000156459016024469/msft-10k_20160630.htm" },
+    { "entityId": "microsoft", "date": "2019-06-30", "employeeCount": 144000, "freeCashFlow": 38260000000, "sourceName": "Microsoft 10-K FY2019", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000156459019027952/msft-10k_20190630.htm" },
+    { "entityId": "microsoft", "date": "2022-06-30", "employeeCount": 221000, "freeCashFlow": 65149000000, "sourceName": "Microsoft 10-K FY2022", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000156459022026876/msft-10k_20220630.htm" },
+    { "entityId": "microsoft", "date": "2024-06-30", "employeeCount": 228000, "freeCashFlow": 74071000000, "sourceName": "Microsoft 10-K FY2024", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/msft-20240630.htm" },
+
+    { "entityId": "google", "date": "2015-12-31", "employeeCount": 61814, "freeCashFlow": 16109000000, "sourceName": "Alphabet 10-K 2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204416000012/goog10-k2015.htm" },
+    { "entityId": "google", "date": "2018-12-31", "employeeCount": 98771, "freeCashFlow": 22832000000, "sourceName": "Alphabet 10-K 2018", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204419000004/goog10-kq42018.htm" },
+    { "entityId": "google", "date": "2021-12-31", "employeeCount": 156500, "freeCashFlow": 67012000000, "sourceName": "Alphabet 10-K 2021", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000019/goog-20211231.htm" },
+    { "entityId": "google", "date": "2023-12-31", "employeeCount": 182502, "freeCashFlow": 69495000000, "sourceName": "Alphabet 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1652044/000165204424000022/goog-20231231.htm" },
+
+    { "entityId": "amazon", "date": "2015-12-31", "employeeCount": 230800, "freeCashFlow": 7331000000, "sourceName": "Amazon 10-K 2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872416000172/amzn-20151231x10k.htm" },
+    { "entityId": "amazon", "date": "2018-12-31", "employeeCount": 647500, "freeCashFlow": 19400000000, "sourceName": "Amazon 10-K 2018", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872419000004/amzn-20181231x10k.htm" },
+    { "entityId": "amazon", "date": "2021-12-31", "employeeCount": 1608000, "freeCashFlow": -9069000000, "sourceName": "Amazon 10-K 2021", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872422000005/amzn-20211231.htm" },
+    { "entityId": "amazon", "date": "2023-12-31", "employeeCount": 1525000, "freeCashFlow": 36813000000, "sourceName": "Amazon 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1018724/000101872424000008/amzn-20231231.htm" },
+
+    { "entityId": "nvidia", "date": "2016-01-31", "employeeCount": 9227, "freeCashFlow": 911000000, "sourceName": "NVIDIA 10-K FY2016", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581016000169/nvda201610-k.htm" },
+    { "entityId": "nvidia", "date": "2020-01-26", "employeeCount": 13775, "freeCashFlow": 4272000000, "sourceName": "NVIDIA 10-K FY2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581020000010/nvda2020form10-k.htm" },
+    { "entityId": "nvidia", "date": "2023-01-29", "employeeCount": 26196, "freeCashFlow": 3808000000, "sourceName": "NVIDIA 10-K FY2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000017/nvda-20230129.htm" },
+    { "entityId": "nvidia", "date": "2024-01-28", "employeeCount": 29600, "freeCashFlow": 27021000000, "sourceName": "NVIDIA 10-K FY2024", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128.htm" },
+
+    { "entityId": "meta", "date": "2015-12-31", "employeeCount": 12691, "freeCashFlow": 7797000000, "sourceName": "Meta 10-K 2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000132680116000043/fb-12312015x10k.htm" },
+    { "entityId": "meta", "date": "2019-12-31", "employeeCount": 44942, "freeCashFlow": 20823000000, "sourceName": "Meta 10-K 2019", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000132680120000013/fb-12312019x10k.htm" },
+    { "entityId": "meta", "date": "2022-12-31", "employeeCount": 86482, "freeCashFlow": 18434000000, "sourceName": "Meta 10-K 2022", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000132680123000013/meta-20221231.htm" },
+    { "entityId": "meta", "date": "2023-12-31", "employeeCount": 67317, "freeCashFlow": 43010000000, "sourceName": "Meta 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1326801/000132680124000012/meta-20231231.htm" },
+
+    { "entityId": "palantir", "date": "2020-12-31", "employeeCount": 2439, "freeCashFlow": -294764000, "sourceName": "Palantir 10-K 2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1321655/000132165521000017/pltr-20201231.htm" },
+    { "entityId": "palantir", "date": "2022-12-31", "employeeCount": 3838, "freeCashFlow": 183600000, "sourceName": "Palantir 10-K 2022", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1321655/000132165523000014/pltr-20221231.htm" },
+    { "entityId": "palantir", "date": "2023-12-31", "employeeCount": 3735, "freeCashFlow": 697000000, "sourceName": "Palantir 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1321655/000132165524000022/pltr-20231231.htm" },
+
+    { "entityId": "crowdstrike", "date": "2021-01-31", "employeeCount": 4965, "freeCashFlow": 293400000, "sourceName": "CrowdStrike 10-K FY2021", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1535527/000153552721000012/crwd-20210131.htm" },
+    { "entityId": "crowdstrike", "date": "2023-01-31", "employeeCount": 7273, "freeCashFlow": 677000000, "sourceName": "CrowdStrike 10-K FY2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1535527/000153552723000031/crwd-20230131.htm" },
+    { "entityId": "crowdstrike", "date": "2024-01-31", "employeeCount": 8387, "freeCashFlow": 927000000, "sourceName": "CrowdStrike 10-K FY2024", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1535527/000153552724000109/crwd-20240131.htm" },
+
+    { "entityId": "jpmorgan", "date": "2015-12-31", "employeeCount": 234598, "sourceName": "JPMorgan Chase 10-K 2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/19617/000001961716000560/corp10-kx123115.htm" },
+    { "entityId": "jpmorgan", "date": "2019-12-31", "employeeCount": 256981, "sourceName": "JPMorgan Chase 10-K 2019", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/19617/000001961720000251/corp10-kx123119.htm" },
+    { "entityId": "jpmorgan", "date": "2023-12-31", "employeeCount": 309926, "sourceName": "JPMorgan Chase 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/19617/000001961724000173/jpm-20231231.htm" },
+
+    { "entityId": "intel", "date": "2015-12-26", "employeeCount": 107300, "freeCashFlow": 11465000000, "sourceName": "Intel 10-K 2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086316000189/a2015form10-k.htm" },
+    { "entityId": "intel", "date": "2019-12-28", "employeeCount": 110800, "freeCashFlow": 16932000000, "sourceName": "Intel 10-K 2019", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086320000008/a12282019q410-k.htm" },
+    { "entityId": "intel", "date": "2022-12-31", "employeeCount": 131900, "freeCashFlow": -4114000000, "sourceName": "Intel 10-K 2022", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086323000007/intc-20221231.htm" },
+    { "entityId": "intel", "date": "2023-12-30", "employeeCount": 124800, "freeCashFlow": -11878000000, "sourceName": "Intel 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/50863/000005086324000009/intc-20231230.htm" },
+
+    { "entityId": "amd", "date": "2016-12-31", "employeeCount": 8200, "freeCashFlow": -420000000, "sourceName": "AMD 10-K 2016", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248817000008/a2016form10-k.htm" },
+    { "entityId": "amd", "date": "2020-12-26", "employeeCount": 12600, "freeCashFlow": 777000000, "sourceName": "AMD 10-K 2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248821000039/amd-20201226.htm" },
+    { "entityId": "amd", "date": "2023-12-30", "employeeCount": 26000, "freeCashFlow": 1120000000, "sourceName": "AMD 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/2488/000000248824000012/amd-20231230.htm" },
+
+    { "entityId": "oracle", "date": "2016-05-31", "employeeCount": 136000, "freeCashFlow": 12106000000, "sourceName": "Oracle 10-K FY2016", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312516616664/d155942d10k.htm" },
+    { "entityId": "oracle", "date": "2020-05-31", "employeeCount": 135000, "freeCashFlow": 11576000000, "sourceName": "Oracle 10-K FY2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000119312520174710/d37927d10k.htm" },
+    { "entityId": "oracle", "date": "2024-05-31", "employeeCount": 159000, "freeCashFlow": 11810000000, "sourceName": "Oracle 10-K FY2024", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1341439/000095017024075605/orcl-20240531.htm" },
+
+    { "entityId": "ibm", "date": "2015-12-31", "employeeCount": 377757, "freeCashFlow": 13100000000, "sourceName": "IBM 10-K 2015", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/51143/000104746916010329/a2227954z10-k.htm" },
+    { "entityId": "ibm", "date": "2020-12-31", "employeeCount": 345900, "freeCashFlow": 10793000000, "sourceName": "IBM 10-K 2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/51143/000155837021001480/ibm-20201231x10k.htm" },
+    { "entityId": "ibm", "date": "2023-12-31", "employeeCount": 288300, "freeCashFlow": 11157000000, "sourceName": "IBM 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/51143/000155837024001361/ibm-20231231x10k.htm" },
+
+    { "entityId": "adobe", "date": "2016-12-02", "employeeCount": 15706, "freeCashFlow": 5401000000, "sourceName": "Adobe 10-K FY2016", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/796343/000079634317000007/adbefy201610-k.htm" },
+    { "entityId": "adobe", "date": "2020-11-27", "employeeCount": 22634, "freeCashFlow": 5727000000, "sourceName": "Adobe 10-K FY2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/796343/000079634321000006/adbe-20201127.htm" },
+    { "entityId": "adobe", "date": "2023-12-01", "employeeCount": 30709, "freeCashFlow": 7302000000, "sourceName": "Adobe 10-K FY2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/796343/000079634324000007/adbe-20231201.htm" },
+
+    { "entityId": "salesforce", "date": "2016-01-31", "employeeCount": 19000, "freeCashFlow": 1611000000, "sourceName": "Salesforce 10-K FY2016", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1108524/000110852416000167/crmfy201610-k.htm" },
+    { "entityId": "salesforce", "date": "2020-01-31", "employeeCount": 49000, "freeCashFlow": 3630000000, "sourceName": "Salesforce 10-K FY2020", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1108524/000110852420000042/crmfy2010k.htm" },
+    { "entityId": "salesforce", "date": "2024-01-31", "employeeCount": 72682, "freeCashFlow": 9498000000, "sourceName": "Salesforce 10-K FY2024", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1108524/000110852424000010/crm-20240131.htm" },
+
+    { "entityId": "uber", "date": "2019-12-31", "employeeCount": 26900, "freeCashFlow": -4832000000, "sourceName": "Uber 10-K 2019", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1543151/000154315120000021/uber-20191231.htm" },
+    { "entityId": "uber", "date": "2022-12-31", "employeeCount": 32800, "freeCashFlow": 390000000, "sourceName": "Uber 10-K 2022", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1543151/000154315123000007/uber-20221231.htm" },
+    { "entityId": "uber", "date": "2023-12-31", "employeeCount": 30400, "freeCashFlow": 3362000000, "sourceName": "Uber 10-K 2023", "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1543151/000154315124000010/uber-20231231.htm" },
+
+    { "entityId": "tsmc", "date": "2015-12-31", "employeeCount": 45272, "sourceName": "TSMC Annual Report 2015", "sourceUrl": "https://investor.tsmc.com/english/annual-reports" },
+    { "entityId": "tsmc", "date": "2020-12-31", "employeeCount": 56831, "sourceName": "TSMC Annual Report 2020", "sourceUrl": "https://investor.tsmc.com/english/annual-reports" },
+    { "entityId": "tsmc", "date": "2023-12-31", "employeeCount": 76478, "sourceName": "TSMC Annual Report 2023", "sourceUrl": "https://investor.tsmc.com/english/annual-reports" },
+
+    { "entityId": "anthropic", "date": "2021-05-28", "marketCapUsd": 845000000, "sourceName": "Anthropic Series A (Bloomberg)", "sourceUrl": "https://www.bloomberg.com/news/articles/2021-05-28/anthropic-raises-124-million-to-study-real-world-ai-problems" },
+    { "entityId": "anthropic", "date": "2022-04-29", "marketCapUsd": 4000000000, "sourceName": "Anthropic Series B (TechCrunch)", "sourceUrl": "https://techcrunch.com/2022/04/29/anthropic-raises-580m-led-by-ftx-ceo-sam-bankman-fried/" },
+    { "entityId": "anthropic", "date": "2023-05-23", "marketCapUsd": 5000000000, "sourceName": "Anthropic Series C (Reuters)", "sourceUrl": "https://www.reuters.com/technology/anthropic-raises-450-mln-new-funding-round-led-by-spark-capital-2023-05-23/" },
+    { "entityId": "anthropic", "date": "2024-03-27", "marketCapUsd": 18400000000, "employeeCount": 500, "sourceName": "Anthropic Series D (The Information)", "sourceUrl": "https://www.theinformation.com/articles/anthropic-closes-in-on-funding-at-18-4-billion-valuation" },
+    { "entityId": "anthropic", "date": "2025-01-07", "marketCapUsd": 60000000000, "employeeCount": 1000, "sourceName": "Anthropic Series E talks (WSJ)", "sourceUrl": "https://www.wsj.com/tech/ai/anthropic-new-funding-round-60-billion-valuation" },
+
+    { "entityId": "openai", "date": "2019-07-22", "marketCapUsd": 10000000000, "sourceName": "Microsoft $1B investment in OpenAI", "sourceUrl": "https://blogs.microsoft.com/blog/2019/07/22/openai-forms-exclusive-computing-partnership-with-microsoft-to-build-new-azure-ai-supercomputing-technologies/" },
+    { "entityId": "openai", "date": "2023-01-23", "marketCapUsd": 29000000000, "sourceName": "OpenAI $10B Microsoft partnership (WSJ)", "sourceUrl": "https://www.wsj.com/articles/microsoft-in-advanced-talks-to-increase-investment-in-openai-11673281495" },
+    { "entityId": "openai", "date": "2023-04-28", "marketCapUsd": 27000000000, "sourceName": "OpenAI tender offer (Reuters)", "sourceUrl": "https://www.reuters.com/technology/openai-closes-300-million-share-sale-valuation-27-29-billion-report-2023-04-28/" },
+    { "entityId": "openai", "date": "2024-02-16", "marketCapUsd": 80000000000, "employeeCount": 1700, "sourceName": "OpenAI tender at $80B (NYT)", "sourceUrl": "https://www.nytimes.com/2024/02/16/technology/openai-valuation-microsoft.html" },
+    { "entityId": "openai", "date": "2024-10-02", "marketCapUsd": 157000000000, "employeeCount": 2000, "sourceName": "OpenAI $6.6B round (CNBC)", "sourceUrl": "https://www.cnbc.com/2024/10/02/openai-closes-funding-at-157-billion-valuation.html" },
+
+    { "entityId": "figma", "date": "2021-06-24", "marketCapUsd": 10000000000, "sourceName": "Figma Series E (TechCrunch)", "sourceUrl": "https://techcrunch.com/2021/06/24/figma-raises-200m-on-10b-valuation/" },
+    { "entityId": "figma", "date": "2022-09-15", "marketCapUsd": 20000000000, "sourceName": "Adobe/Figma deal announcement", "sourceUrl": "https://news.adobe.com/news/news-details/2022/Adobe-to-Acquire-Figma/" },
+    { "entityId": "figma", "date": "2024-05-01", "marketCapUsd": 12500000000, "sourceName": "Figma tender post-Adobe cancel (Bloomberg)", "sourceUrl": "https://www.bloomberg.com/news/articles/2024-05-01/figma-tender-offer-values-company-at-12-5-billion" },
+
+    { "entityId": "bytedance", "date": "2018-10-26", "marketCapUsd": 75000000000, "sourceName": "ByteDance Series E pre-IPO (WSJ)", "sourceUrl": "https://www.wsj.com/articles/bytedance-owner-of-tiktok-worth-75-billion-1540569306" },
+    { "entityId": "bytedance", "date": "2020-12-01", "marketCapUsd": 180000000000, "sourceName": "ByteDance tender (Reuters)", "sourceUrl": "https://www.reuters.com/article/us-tiktok-bytedance-funding-idUSKBN28B07D" },
+    { "entityId": "bytedance", "date": "2024-05-01", "marketCapUsd": 268000000000, "employeeCount": 150000, "sourceName": "ByteDance buyback valuation (The Information)", "sourceUrl": "https://www.theinformation.com/articles/bytedance-268-billion-buyback-tiktok" }
+  ]
+}
