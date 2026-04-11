@@ -36,8 +36,12 @@
 import { PrismaClient } from '@prisma/client';
 import readline from 'node:readline';
 
-import { runSnapshotFinancialsMigration } from './migrate_snapshot_financials';
-import { runEventCategoryMigration } from './migrate_event_category';
+// 0.1.20: the canonical MIGRATIONS list now lives in
+// src/lib/server/migrations.ts so the CLI driver and the API route at
+// /api/migrate share a single source of truth. This file is still the
+// primary user-facing entry point for the upgrade-in-place command
+// line workflow, but the ordering and step bodies are centralized.
+import { MIGRATIONS } from '../src/lib/server/migrations';
 
 interface CliFlags {
   yes: boolean;
@@ -124,31 +128,10 @@ async function countdown(seconds: number): Promise<void> {
   process.stdout.write('  Running migrations now...               \n\n');
 }
 
-interface MigrationStep {
-  id: string;
-  description: string;
-  run: (prisma: PrismaClient) => Promise<void>;
-}
-
-const MIGRATIONS: MigrationStep[] = [
-  {
-    id: '0.1.13-snapshot-financials',
-    description:
-      'Add marketCapUsd / employeeCount / freeCashFlow / sourceName / sourceUrl columns to EntitySnapshot and a unique index on (entityId, date).',
-    run: runSnapshotFinancialsMigration,
-  },
-  {
-    id: '0.1.11-event-category',
-    description:
-      "Backfill Event.category as 'job' for single-agency events and 'news' for multi-entity or fallback events.",
-    run: runEventCategoryMigration,
-  },
-];
-
 async function main() {
   const flags = parseArgs(process.argv.slice(2));
 
-  console.log(`Sheaf auto-migration driver (v0.1.18)`);
+  console.log(`Sheaf auto-migration driver (v0.1.20)`);
   console.log(`${MIGRATIONS.length} migration step${MIGRATIONS.length === 1 ? '' : 's'} registered:`);
   for (const m of MIGRATIONS) {
     console.log(`  - [${m.id}] ${m.description}`);

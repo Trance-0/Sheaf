@@ -23,37 +23,53 @@
  * 0.1.18: exported `runSnapshotFinancialsMigration(prisma)` so
  * `migrate_auto.ts` can compose it with other migrations under a shared
  * Prisma client + shared confirmation prompt.
+ *
+ * 0.1.20: added an optional `logger` parameter (defaults to `console`)
+ * so the frontend-facing `/api/migrate` route can capture output
+ * line-by-line and return it to the BackendUpgradePrompt UI. CLI
+ * callers don't need to pass anything — `console` matches the
+ * `MigrationLogger` shape directly.
  */
 import { PrismaClient } from '@prisma/client';
 
-async function addColumn(prisma: PrismaClient, name: string, type: string) {
+// Matches `console` structurally so legacy CLI callers keep working.
+// Defined inline rather than imported so this file has no dependency
+// on the src/ tree.
+type MigrationLogger = { log: (message: string) => void };
+
+async function addColumn(prisma: PrismaClient, logger: MigrationLogger, name: string, type: string) {
   const sql = `ALTER TABLE "EntitySnapshot" ADD COLUMN IF NOT EXISTS "${name}" ${type};`;
   await prisma.$executeRawUnsafe(sql);
-  console.log(`  + column ${name} ${type}`);
+  logger.log(`  + column ${name} ${type}`);
 }
 
-export async function runSnapshotFinancialsMigration(prisma: PrismaClient): Promise<void> {
-  console.log('EntitySnapshot financial columns:');
-  await addColumn(prisma, 'marketCapUsd', 'DOUBLE PRECISION');
-  await addColumn(prisma, 'employeeCount', 'INTEGER');
-  await addColumn(prisma, 'freeCashFlow', 'DOUBLE PRECISION');
-  await addColumn(prisma, 'sourceName', 'TEXT');
-  await addColumn(prisma, 'sourceUrl', 'TEXT');
+export async function runSnapshotFinancialsMigration(
+  prisma: PrismaClient,
+  logger: MigrationLogger = console,
+): Promise<void> {
+  logger.log('EntitySnapshot financial columns:');
+  await addColumn(prisma, logger, 'marketCapUsd', 'DOUBLE PRECISION');
+  await addColumn(prisma, logger, 'employeeCount', 'INTEGER');
+  await addColumn(prisma, logger, 'freeCashFlow', 'DOUBLE PRECISION');
+  await addColumn(prisma, logger, 'sourceName', 'TEXT');
+  await addColumn(prisma, logger, 'sourceUrl', 'TEXT');
 
-  console.log('\nUnique constraint (entityId, date):');
+  logger.log('');
+  logger.log('Unique constraint (entityId, date):');
   // CREATE UNIQUE INDEX IF NOT EXISTS is safer than ALTER TABLE ADD
   // CONSTRAINT because it's idempotent and doesn't blow up on re-run.
   await prisma.$executeRawUnsafe(`
     CREATE UNIQUE INDEX IF NOT EXISTS "EntitySnapshot_entityId_date_key"
     ON "EntitySnapshot" ("entityId", "date");
   `);
-  console.log('  + unique index EntitySnapshot_entityId_date_key');
+  logger.log('  + unique index EntitySnapshot_entityId_date_key');
 
   // Summary of row count so the operator can sanity-check.
   const rows = await prisma.$queryRawUnsafe(`
     SELECT COUNT(*)::bigint AS count FROM "EntitySnapshot";
   `) as { count: bigint }[];
-  console.log(`\nEntitySnapshot currently holds ${rows[0].count} rows.`);
+  logger.log('');
+  logger.log(`EntitySnapshot currently holds ${rows[0].count} rows.`);
 }
 
 // Standalone CLI entrypoint. Only runs when invoked directly via

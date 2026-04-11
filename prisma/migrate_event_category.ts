@@ -16,10 +16,19 @@
  * 0.1.18: exported `runEventCategoryMigration(prisma)` so
  * `migrate_auto.ts` can compose it with other migrations under a shared
  * Prisma client + shared confirmation prompt.
+ *
+ * 0.1.20: added an optional `logger` parameter (defaults to `console`)
+ * so the frontend-facing `/api/migrate` route can capture output
+ * line-by-line and return it to the BackendUpgradePrompt UI.
  */
 import { PrismaClient } from '@prisma/client';
 
-export async function runEventCategoryMigration(prisma: PrismaClient): Promise<void> {
+type MigrationLogger = { log: (message: string) => void };
+
+export async function runEventCategoryMigration(
+  prisma: PrismaClient,
+  logger: MigrationLogger = console,
+): Promise<void> {
   // 1) Jobs: events with exactly one EventEntity row whose entity is an agency.
   const jobCount = await prisma.$executeRawUnsafe(`
     UPDATE "Event"
@@ -34,7 +43,7 @@ export async function runEventCategoryMigration(prisma: PrismaClient): Promise<v
         HAVING COUNT(*) = 1
       );
   `);
-  console.log(`[category=job] updated ${jobCount} events`);
+  logger.log(`[category=job] updated ${jobCount} events`);
 
   // 2) News: events with >= 2 linked entities (and still NULL after pass 1).
   const newsMulti = await prisma.$executeRawUnsafe(`
@@ -45,7 +54,7 @@ export async function runEventCategoryMigration(prisma: PrismaClient): Promise<v
         SELECT "eventId" FROM "EventEntity" GROUP BY "eventId" HAVING COUNT(*) >= 2
       );
   `);
-  console.log(`[category=news multi-entity] updated ${newsMulti} events`);
+  logger.log(`[category=news multi-entity] updated ${newsMulti} events`);
 
   // 3) Fallback: anything still NULL (single-entity, non-agency) -> 'news'.
   const newsFallback = await prisma.$executeRawUnsafe(`
@@ -53,15 +62,16 @@ export async function runEventCategoryMigration(prisma: PrismaClient): Promise<v
     SET "category" = 'news'
     WHERE "category" IS NULL;
   `);
-  console.log(`[category=news fallback] updated ${newsFallback} events`);
+  logger.log(`[category=news fallback] updated ${newsFallback} events`);
 
   // Summary
   const rows = await prisma.$queryRawUnsafe(`
     SELECT "category", COUNT(*)::bigint AS count FROM "Event" GROUP BY "category" ORDER BY "category";
   `) as { category: string | null; count: bigint }[];
-  console.log('\nFinal distribution:');
+  logger.log('');
+  logger.log('Final distribution:');
   for (const r of rows) {
-    console.log(`  ${r.category ?? '(null)'}: ${r.count}`);
+    logger.log(`  ${r.category ?? '(null)'}: ${r.count}`);
   }
 }
 
