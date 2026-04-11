@@ -5,6 +5,62 @@ import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl, useS
 import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
+import type { NodeSizeFactor } from "@/lib/useAppSettings";
+
+interface GraphNode {
+  id: string;
+  label?: string;
+  score?: number;
+  eventCount?: number;
+  marketCapUsd: number | null;
+  employeeCount: number | null;
+  freeCashFlow: number | null;
+}
+
+/**
+ * Maps the user's selected size-factor onto a visible sigma node radius.
+ *
+ * We log-scale the financial fields because market-cap and free-cash-flow
+ * span orders of magnitude (billions vs low-millions), and a linear mapping
+ * would make the small nodes disappear. When a node is missing the chosen
+ * field we fall back to event_count so the node still shows up at all.
+ */
+function computeNodeSize(factor: NodeSizeFactor, n: GraphNode): number {
+  const MIN = 8;
+  const MAX = 40;
+  const clamp = (v: number) => Math.max(MIN, Math.min(MAX, v));
+
+  const eventBase = clamp(8 + (n.eventCount ?? 1) * 3);
+
+  const logScale = (v: number | null, pivot: number) => {
+    if (!v || v <= 0) return null;
+    // pivot is the value that should map to ~half-scale (~24)
+    const logV = Math.log10(v);
+    const logPivot = Math.log10(pivot);
+    return clamp(8 + (logV / logPivot) * 20);
+  };
+
+  switch (factor) {
+    case "market_cap": {
+      // pivot ~= $100B
+      const s = logScale(n.marketCapUsd, 1e11);
+      return s ?? eventBase;
+    }
+    case "employee_count": {
+      // pivot ~= 100k employees
+      const s = logScale(n.employeeCount, 1e5);
+      return s ?? eventBase;
+    }
+    case "free_cash_flow": {
+      // pivot ~= $10B
+      const s = logScale(n.freeCashFlow, 1e10);
+      return s ?? eventBase;
+    }
+    case "event_count":
+    default:
+      return eventBase;
+  }
+}
 
 /**
  * Controls layout + sigma event wiring.
@@ -97,11 +153,13 @@ export default function GraphCanvas({
   onEdgeClick,
   timeFilter,
   kind = "all",
+  sizeFactor = "event_count",
 }: {
   onNodeClick: (id: string) => void;
   onEdgeClick: (source: string, target: string) => void;
   timeFilter: number;
   kind?: "all" | "news" | "job";
+  sizeFactor?: NodeSizeFactor;
 }) {
   const [graph, setGraph] = useState<Graph | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -121,11 +179,11 @@ export default function GraphCanvas({
         const g = new Graph();
         // Spread initial positions widely so FA2 isn't starting from a
         // pile in the middle of the canvas.
-        data.nodes.forEach((n: { id: string; label?: string; size?: number; score?: number }) => {
+        data.nodes.forEach((n: GraphNode) => {
           g.addNode(n.id, {
             x: (Math.random() - 0.5) * 1000,
             y: (Math.random() - 0.5) * 1000,
-            size: Math.min(n.size || 15, 40),
+            size: computeNodeSize(sizeFactor, n),
             label: n.label || n.id,
             color: (n.score ?? 0) > 0 ? "#10b981" : (n.score ?? 0) < 0 ? "#ef4444" : "#9ca3af",
           });
@@ -147,7 +205,7 @@ export default function GraphCanvas({
         setGraph(g);
       })
       .catch(console.error);
-  }, [timeFilter, kind]);
+  }, [timeFilter, kind, sizeFactor]);
 
   if (!graph) return null;
 
@@ -156,7 +214,7 @@ export default function GraphCanvas({
       // Force a remount whenever the filter or graph changes so sigma +
       // layout worker start clean; without this the FA2 settle timer only
       // fires on the very first load.
-      key={`${timeFilter}-${kind}-${graph.order}-${graph.size}`}
+      key={`${timeFilter}-${kind}-${sizeFactor}-${graph.order}-${graph.size}`}
       graph={graph}
       settings={{
         enableEdgeEvents: true,

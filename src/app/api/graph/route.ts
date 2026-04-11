@@ -3,41 +3,59 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+interface GraphNode {
+  id: string;
+  label: string;
+  homepage: string | null;
+  jobPortal: string | null;
+  score: number;
+  eventCount: number;
+  // Static size-factor fields the client uses when the user picks a
+  // non-default nodeSizeFactor in Settings. All optional.
+  marketCapUsd: number | null;
+  employeeCount: number | null;
+  freeCashFlow: number | null;
+}
+
+interface GraphEdgeEvent {
+  id: string;
+  title: string;
+  date: Date;
+  description: string | null;
+  articleCount: number;
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const daysParam = searchParams.get("days");
   const days = daysParam ? parseInt(daysParam, 10) : 30;
-  // kind: "all" (default — money view), "news" (≥2 entities), "job" (single agency entity)
+  // kind filters by the explicit Event.category column added in 0.1.11.
+  // "all" returns everything, "news" filters category='news', "job" filters 'job'.
   const kind = (searchParams.get("kind") ?? "all") as "all" | "news" | "job";
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
-  const rawEvents = await prisma.event.findMany({
-    where: { date: { gte: cutoffDate } },
+  const events = await prisma.event.findMany({
+    where: {
+      date: { gte: cutoffDate },
+      ...(kind !== "all" ? { category: kind } : {}),
+    },
     include: {
       entities: { include: { entity: true } },
       articles: true,
     },
   });
 
-  // Discriminator (schema-free for now): news events link ≥2 entities;
-  // job events are single-entity postings tied to an agency. This will be
-  // replaced with an explicit `Event.category` column in a later migration.
-  const events = rawEvents.filter(ev => {
-    if (kind === "news") return ev.entities.length >= 2;
-    if (kind === "job") return ev.entities.length === 1 && ev.entities[0].entity.type === "agency";
-    return true;
-  });
-
-  const nodesMap = new Map<string, any>();
-  // Key: "source||target" (sorted), Value: { events[], totalWeight }
-  const edgeBuckets = new Map<string, { source: string; target: string; events: any[]; totalWeight: number; impact: string }>();
+  const nodesMap = new Map<string, GraphNode>();
+  const edgeBuckets = new Map<string, { source: string; target: string; events: GraphEdgeEvent[]; totalWeight: number; impact: string }>();
 
   for (const event of events) {
     const ees = event.entities;
 
-    // Build nodes from entities
+    // Build nodes from entities. The raw event-derived size calculation is
+    // kept on the client side (GraphCanvas computes final size from the
+    // selected nodeSizeFactor) — here we just expose raw signals.
     for (const ee of ees) {
       const id = ee.entity.id.toLowerCase();
       if (!nodesMap.has(id)) {
@@ -47,11 +65,14 @@ export async function GET(req: Request) {
           homepage: ee.entity.homepage,
           jobPortal: ee.entity.jobPortal,
           score: ee.impactScore5w ?? 0,
-          size: 15,
+          eventCount: 1,
+          marketCapUsd: ee.entity.marketCapUsd ?? null,
+          employeeCount: ee.entity.employeeCount ?? null,
+          freeCashFlow: ee.entity.freeCashFlow ?? null,
         });
       } else {
         const existing = nodesMap.get(id)!;
-        existing.size += 3;
+        existing.eventCount += 1;
         existing.score += (ee.impactScore5w ?? 0);
       }
     }

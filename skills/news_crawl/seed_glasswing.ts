@@ -122,6 +122,10 @@ async function main() {
           title: ev.title,
           date: new Date(ev.publishedAt),
           description: ev.description,
+          // All events seeded from Glasswing are multi-entity news items —
+          // set the explicit discriminator introduced in 0.1.11 so future
+          // graph filters pick them up without the old 2-entity heuristic.
+          category: 'news',
           entities: {
             createMany: {
               data: [

@@ -17,6 +17,9 @@ export async function GET(req: Request) {
     include: {
       aliases: true,
       snapshots: { orderBy: { date: 'desc' }, take: 1 },
+      // Pull everything once, sort client-side by date, split news vs job
+      // by category. We cap to 30 total so a chatty agency doesn't flood
+      // either tab — UI shows both in their own scrollable lists.
       events: {
         include: {
           event: {
@@ -33,7 +36,7 @@ export async function GET(req: Request) {
           },
         },
         orderBy: { event: { date: 'desc' } },
-        take: 10,
+        take: 30,
       },
     },
   });
@@ -42,6 +45,33 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Entity not found" }, { status: 404 });
   }
 
+  // Shape a single EventEntity row into the summarized payload the
+  // SidePanel consumes. Shared between the news and job buckets.
+  type EventEntityRow = typeof entity.events[number];
+  const toSummary = (ee: EventEntityRow) => ({
+    eventId: ee.event.id,
+    title: ee.event.title,
+    date: ee.event.date,
+    description: ee.event.description,
+    articleCount: ee.event._count.articles,
+    primaryArticleUrl: ee.event.articles[0]?.url ?? null,
+    primaryArticleTitle: ee.event.articles[0]?.title ?? null,
+    primaryArticleProvider: ee.event.articles[0]?.provider ?? null,
+    impact5d: ee.impactScore5d,
+    impact5w: ee.impactScore5w,
+  });
+
+  // Anything not explicitly tagged 'job' falls into the news bucket — this
+  // keeps legacy events (pre-0.1.11 category migration edge cases) visible.
+  const recentEvents = entity.events
+    .filter(ee => ee.event.category !== 'job')
+    .slice(0, 10)
+    .map(toSummary);
+  const recentJobs = entity.events
+    .filter(ee => ee.event.category === 'job')
+    .slice(0, 10)
+    .map(toSummary);
+
   return NextResponse.json({
     id: entity.id,
     name: entity.name,
@@ -49,20 +79,16 @@ export async function GET(req: Request) {
     description: entity.description,
     homepage: entity.homepage,
     jobPortal: entity.jobPortal,
+    // Static financial / size-factor fields shown in the stats panel.
+    stockTicker: entity.stockTicker,
+    marketCapUsd: entity.marketCapUsd,
+    employeeCount: entity.employeeCount,
+    freeCashFlow: entity.freeCashFlow,
+    foundedYear: entity.foundedYear,
     aliases: entity.aliases.map(a => a.alias),
     latestSnapshot: entity.snapshots[0] ?? null,
-    recentEvents: entity.events.map(ee => ({
-      eventId: ee.event.id,
-      title: ee.event.title,
-      date: ee.event.date,
-      description: ee.event.description,
-      articleCount: ee.event._count.articles,
-      primaryArticleUrl: ee.event.articles[0]?.url ?? null,
-      primaryArticleTitle: ee.event.articles[0]?.title ?? null,
-      primaryArticleProvider: ee.event.articles[0]?.provider ?? null,
-      impact5d: ee.impactScore5d,
-      impact5w: ee.impactScore5w,
-    })),
+    recentEvents,
+    recentJobs,
   });
 }
 

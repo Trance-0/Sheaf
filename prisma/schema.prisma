@@ -15,6 +15,16 @@ model Entity {
   homepage       String?
   jobPortal      String?
   interestWeight Float    @default(1.0)
+
+  // Static financial / size-factor fields. All optional — we don't require
+  // every entity to fill them in, and the UI + node-size factor both
+  // gracefully fall back when a field is null. Amounts are stored in USD.
+  stockTicker   String?
+  marketCapUsd  Float?
+  employeeCount Int?
+  freeCashFlow  Float?
+  foundedYear   Int?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -36,6 +46,11 @@ model Event {
   title       String
   date        DateTime
   description String?
+
+  // Explicit discriminator: "news" (multi-entity relationship event) or
+  // "job" (single-agency job posting). Replaces the 0.1.7 heuristic of
+  // "event has >= 2 entities => news" and lets /api/graph filter directly.
+  category String?
 
   entities  EventEntity[]
   articles  Article[]

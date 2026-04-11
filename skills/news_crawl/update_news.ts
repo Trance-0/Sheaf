@@ -80,6 +80,7 @@ Usage:
           title: eventTitle,
           date: new Date(publishedAt),
           description: description || '',
+          category: 'news',
           entities: {
             createMany: {
               data: [

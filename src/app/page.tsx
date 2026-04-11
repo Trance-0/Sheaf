@@ -4,19 +4,16 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import SidePanel from "@/components/SidePanel";
 import SettingsPanel from "@/components/SettingsPanel";
-import CareerSidebar from "@/components/CareerSidebar";
 import TimeScaleBar from "@/components/TimeScaleBar";
-import { Settings, TrendingUp, Briefcase, Newspaper } from "lucide-react";
+import { useAppSettings } from "@/lib/useAppSettings";
+import { Settings } from "lucide-react";
 
 const GraphCanvas = dynamic(() => import("@/components/GraphCanvas"), {
   ssr: false,
   loading: () => <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm z-50 text-white">Loading Knowledge Graph...</div>,
 });
 
-type TabKind = "money" | "news" | "career";
-
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabKind>("money");
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{ source: string; target: string } | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -24,9 +21,9 @@ export default function Home() {
   // instead of the handful that fall inside a 30-day window.
   const [timeFilter, setTimeFilter] = useState<number>(9999);
 
-  // Map each tab to the graph `kind` filter consumed by /api/graph
-  const graphKind: "all" | "news" | "job" =
-    activeTab === "news" ? "news" : activeTab === "career" ? "job" : "all";
+  // Node-size factor + theme live in a persisted settings store so they
+  // survive reloads and can be exported/imported as JSON.
+  const { settings } = useAppSettings();
 
   const handleNodeClick = (id: string) => {
     setSelectedNode(id);
@@ -45,27 +42,13 @@ export default function Home() {
 
   return (
     <main className="app-container">
-      {/* Top Bar for Tabs */}
-      <div className="absolute top-6 left-6 z-10 flex gap-3">
-        <button
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "money" ? "bg-blue-500/20 border border-blue-500/50 text-blue-600 dark:text-blue-400" : "glass-panel text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10"}`}
-          onClick={() => setActiveTab("money")}
-        >
-          <TrendingUp size={16} /> Money (Financial)
-        </button>
-        <button
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "news" ? "bg-blue-500/20 border border-blue-500/50 text-blue-600 dark:text-blue-400" : "glass-panel text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10"}`}
-          onClick={() => setActiveTab("news")}
-        >
-          <Newspaper size={16} /> News
-        </button>
-        <button
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "career" ? "bg-blue-500/20 border border-blue-500/50 text-blue-600 dark:text-blue-400" : "glass-panel text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10"}`}
-          onClick={() => setActiveTab("career")}
-        >
-          <Briefcase size={16} /> Career (My Time)
-        </button>
-
+      {/* Top-left title + settings. The News and Career tabs were removed in
+          0.1.11 — all three categories now live in a single unified graph,
+          and per-entity job drill-down is a tab inside the SidePanel. */}
+      <div className="absolute top-6 left-6 z-10 flex items-center gap-3">
+        <h1 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent px-4 py-2 glass-panel rounded-lg">
+          Sheaf
+        </h1>
         <button
           className="glass-panel flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-white/50 dark:hover:bg-white/10 transition-all"
           onClick={() => setShowSettings(true)}
@@ -74,16 +57,10 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Time scale bar — always live, pinned centered just below the tab
-          row so it doesn't collide with the buttons on narrower displays. */}
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+      {/* Time scale bar — always live, pinned centered at the top. */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
         <TimeScaleBar value={timeFilter} onChange={setTimeFilter} />
       </div>
-
-      {/* Career sidebar (only in Career tab) */}
-      {activeTab === "career" && (
-        <CareerSidebar onAgencyFocus={handleNodeClick} />
-      )}
 
       {/* Main Graph Area */}
       <section className="flex-1 relative">
@@ -91,7 +68,7 @@ export default function Home() {
           onNodeClick={handleNodeClick}
           onEdgeClick={handleEdgeClick}
           timeFilter={timeFilter}
-          kind={graphKind}
+          sizeFactor={settings.nodeSizeFactor}
         />
       </section>
 

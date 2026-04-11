@@ -83,6 +83,7 @@ Usage:
           title: jobTitle,
           date: new Date(publishedAt),
           description: description || '',
+          category: 'job',
           entities: {
             create: {
               entityId: agency.id,
