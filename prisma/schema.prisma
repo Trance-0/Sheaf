@@ -110,8 +110,9 @@ model EntitySnapshot {
   // Provenance: where the data point came from. `sourceName` is a short
   // human label ("Yahoo Finance", "SEC 10-K", "TechCrunch"), `sourceUrl`
   // is a direct link to the underlying source so every point is
-  // auditable. Required by the TASK.md "keep the most credible one, with
-  // source link for each data point" instruction.
+  // auditable. Required by the "keep the most credible one, with source
+  // link for each data point" invariant (originally tracked in
+  // docs/TODO.md, formerly docs/TASK.md).
   sourceName String?
   sourceUrl  String?
 
