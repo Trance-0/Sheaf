@@ -2,45 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { X, ExternalLink, Globe, Briefcase, ChevronRight, ChevronDown, Newspaper, Pencil, Check, Loader2, TrendingUp, Users, DollarSign, Calendar } from "lucide-react";
-import { buildDatabaseHeaders, hasDatabaseUrl, useAppSettings } from "@/lib/useAppSettings";
-import { apiFetch } from "@/lib/apiFetch";
-
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  description: string;
-  articles: { id: string; title: string; url: string; provider: string; publishedAt: string }[];
-  impactScores: { entity: string; s5d: number | null; s5w: number | null }[];
-}
-
-interface NodeRecentEvent {
-  eventId: string;
-  title: string;
-  date: string;
-  description: string | null;
-  articleCount: number;
-  primaryArticleUrl: string | null;
-  primaryArticleTitle: string | null;
-  primaryArticleProvider: string | null;
-  impact5w: number | null;
-}
-
-interface NodeData {
-  id: string;
-  name: string;
-  type: string;
-  description: string | null;
-  homepage: string | null;
-  jobPortal: string | null;
-  stockTicker: string | null;
-  marketCapUsd: number | null;
-  employeeCount: number | null;
-  freeCashFlow: number | null;
-  foundedYear: number | null;
-  recentEvents: NodeRecentEvent[];
-  recentJobs: NodeRecentEvent[];
-}
+import { hasDatabaseUrl, useAppSettings } from "@/lib/useAppSettings";
+import { fetchNodeDetail, updateNode, type NodeDetail as NodeData } from "@/lib/client/nodeData";
+import { fetchEdge, type EdgeEventDetail as EventData } from "@/lib/client/edgeData";
 
 type NodeTab = "events" | "jobs";
 
@@ -103,27 +67,19 @@ export default function SidePanel({
       return;
     }
 
-    const headers = buildDatabaseHeaders(settings);
     if (selectedNode) {
       setLoading(true);
-      apiFetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, { headers })
-        .then(async (response) => {
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Failed to load node");
-          return data;
+      fetchNodeDetail(settings.databaseUrl, selectedNode)
+        .then((data) => {
+          if (!data) throw new Error("Entity not found");
+          setNodeData(data);
         })
-        .then((data) => setNodeData(data))
         .catch((error) => setPanelError(error instanceof Error ? error.message : "Failed to load node"))
         .finally(() => setLoading(false));
     } else if (selectedEdge) {
       setLoading(true);
-      apiFetch(`/api/edge?source=${encodeURIComponent(selectedEdge.source)}&target=${encodeURIComponent(selectedEdge.target)}`, { headers })
-        .then(async (response) => {
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Failed to load edge");
-          return data;
-        })
-        .then((data) => setEdgeEvents(data.events ?? []))
+      fetchEdge(settings.databaseUrl, selectedEdge.source, selectedEdge.target)
+        .then((data) => setEdgeEvents(data.events))
         .catch((error) => setPanelError(error instanceof Error ? error.message : "Failed to load edge"))
         .finally(() => setLoading(false));
     }
@@ -148,20 +104,11 @@ export default function SidePanel({
     setSaving(true);
     setSaveError(null);
     try {
-      const res = await apiFetch(`/api/node?id=${encodeURIComponent(selectedNode)}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...buildDatabaseHeaders(settings),
-        },
-        body: JSON.stringify({
-          homepage: editHomepage,
-          jobPortal: editJobPortal,
-          description: editDescription,
-        }),
+      const payload = await updateNode(settings.databaseUrl, selectedNode, {
+        homepage: editHomepage,
+        jobPortal: editJobPortal,
+        description: editDescription,
       });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(payload.error || `Save failed (${res.status})`);
       setNodeData((prev) => prev ? {
         ...prev,
         homepage: payload.homepage,

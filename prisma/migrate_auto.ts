@@ -36,12 +36,36 @@
 import { PrismaClient } from '@prisma/client';
 import readline from 'node:readline';
 
-// 0.1.20: the canonical MIGRATIONS list now lives in
-// src/lib/server/migrations.ts so the CLI driver and the API route at
-// /api/migrate share a single source of truth. This file is still the
-// primary user-facing entry point for the upgrade-in-place command
-// line workflow, but the ordering and step bodies are centralized.
-import { MIGRATIONS } from '../src/lib/server/migrations';
+// 0.1.21: the in-browser runner is now the primary path — migrations
+// live as SQL inside `src/lib/client/migrations.ts` and the frontend
+// executes them directly against Neon over HTTP. This CLI driver is
+// retained for maintainer use against non-Neon Postgres (or in CI),
+// where it still composes the same idempotent Prisma helpers that the
+// individual `migrate_*.ts` files export.
+import { runSnapshotFinancialsMigration } from './migrate_snapshot_financials';
+import { runEventCategoryMigration } from './migrate_event_category';
+import type { PrismaClient as PrismaClientType } from '@prisma/client';
+
+interface MigrationStep {
+  id: string;
+  description: string;
+  run: (prisma: PrismaClientType) => Promise<void>;
+}
+
+const MIGRATIONS: MigrationStep[] = [
+  {
+    id: '0.1.13-snapshot-financials',
+    description:
+      'Add marketCapUsd / employeeCount / freeCashFlow / sourceName / sourceUrl columns to EntitySnapshot and a unique index on (entityId, date).',
+    run: runSnapshotFinancialsMigration,
+  },
+  {
+    id: '0.1.11-event-category',
+    description:
+      "Backfill Event.category as 'job' for single-agency events and 'news' for multi-entity or fallback events.",
+    run: runEventCategoryMigration,
+  },
+];
 
 interface CliFlags {
   yes: boolean;

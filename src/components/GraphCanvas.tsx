@@ -5,37 +5,9 @@ import { SigmaContainer, ControlsContainer, ZoomControl, FullScreenControl, useS
 import { useWorkerLayoutForceAtlas2 } from "@react-sigma/layout-forceatlas2";
 import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
-import { buildDatabaseHeaders, hasDatabaseUrl, type EdgeSizeFactor, type NodeSizeFactor, type AppSettings } from "@/lib/useAppSettings";
-import { apiFetch } from "@/lib/apiFetch";
+import { hasDatabaseUrl, type EdgeSizeFactor, type NodeSizeFactor, type AppSettings } from "@/lib/useAppSettings";
+import { fetchGraph, type GraphEdge, type GraphNode } from "@/lib/client/graphData";
 import type { DateRange } from "@/components/DateRangeFilter";
-
-interface GraphNode {
-  id: string;
-  label?: string;
-  score?: number;
-  eventCount?: number;
-  marketCapUsd: number | null;
-  employeeCount: number | null;
-  freeCashFlow: number | null;
-}
-
-interface GraphEdgeEvent {
-  id: string;
-  title: string;
-  date: string; // ISO — JSON-serialized from Prisma Date on the API
-  description: string | null;
-  articleCount: number;
-}
-
-interface GraphEdge {
-  id: string;
-  source: string;
-  target: string;
-  weight: number;
-  impact: string;
-  eventCount: number;
-  events: GraphEdgeEvent[];
-}
 
 /**
  * Map an edge's latest event date to an opacity in [0.2, 1.0], based on how
@@ -224,14 +196,12 @@ export default function GraphCanvas({
 
     let cancelled = false;
 
-    apiFetch(`/api/graph?start=${startIso}&end=${endIso}&kind=${kind}`, {
-      headers: buildDatabaseHeaders(settings),
+    fetchGraph({
+      databaseUrl: settings.databaseUrl,
+      start: dateRange.start,
+      end: dateRange.end,
+      kind,
     })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Failed to load graph");
-        return data;
-      })
       .then((data) => {
         if (cancelled) return;
         setError(null);
