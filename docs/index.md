@@ -37,5 +37,5 @@ Single-user, local-first intelligence board. It is NOT built for public SaaS con
 You MUST actively maintain and update the project documentation upon completing any update.
 
 - If you fix a bug or complete a feature, ensure everything is correctly reflected in the docs.
-- Move completed items from `docs/TASK.md` to a new `<Pending-version>.<inc-numeral>.md` in `docs/versions`.
+- Move completed items from `docs/TASKS.md` to a new `<Pending-version>.<inc-numeral>.md` in `docs/versions`.
 - Increment the third digit of the `VERSION` file appropriately upon finalizing each pull-request/update context.
