@@ -211,9 +211,21 @@ export async function fetchGraph({
       }),
     );
 
-    return {
-      nodes: Array.from(nodesMap.values()),
-      edges,
-    };
+    // Drop single-vertex components. A node appears orphaned when every
+    // event it participates in (within the active date + kind filter)
+    // has only one entity — a job posting with one agency, or a news
+    // event that somehow ended up tagged to a single entity. Those
+    // contribute nothing to the relationship graph, so we prune them
+    // rather than render dangling dots with no edges.
+    const connectedIds = new Set<string>();
+    for (const edge of edges) {
+      connectedIds.add(edge.source);
+      connectedIds.add(edge.target);
+    }
+    const nodes = Array.from(nodesMap.values()).filter((n) =>
+      connectedIds.has(n.id),
+    );
+
+    return { nodes, edges };
   });
 }

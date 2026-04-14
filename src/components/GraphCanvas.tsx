@@ -7,6 +7,7 @@ import "@react-sigma/core/lib/style.css";
 import Graph from "graphology";
 import { hasDatabaseUrl, type EdgeSizeFactor, type NodeSizeFactor, type AppSettings } from "@/lib/useAppSettings";
 import { fetchGraph, type GraphEdge, type GraphNode } from "@/lib/client/graphData";
+import { computeRadialSeed, relaxNoverlap, FORCE_ATLAS2_SETTINGS } from "@/lib/client/layout";
 import type { DateRange } from "@/components/DateRangeFilter";
 
 /**
@@ -94,7 +95,7 @@ function SigmaController({
   const sigma = useSigma();
   const registerEvents = useRegisterEvents();
   const { start, stop, kill } = useWorkerLayoutForceAtlas2({
-    settings: { gravity: 1, slowDown: 10, barnesHutOptimize: true },
+    settings: FORCE_ATLAS2_SETTINGS,
   });
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
   const stopRef = useRef(stop);
@@ -105,12 +106,24 @@ function SigmaController({
 
   useEffect(() => {
     start();
-    const settle = setTimeout(() => stopRef.current(), 3000);
+    // FA2 runs for ~4s against the radial seed, then we stop and apply
+    // a no-overlap relaxation so hub regions aren't a pile of stacked
+    // circles. Relaxation is synchronous on the main thread — fine for
+    // the graph sizes Sheaf handles (<1k nodes).
+    const settle = setTimeout(() => {
+      stopRef.current();
+      try {
+        relaxNoverlap(sigma.getGraph());
+        sigma.refresh();
+      } catch {
+        // Noverlap throws if the graph has no nodes; safe to ignore.
+      }
+    }, 4000);
     return () => {
       clearTimeout(settle);
       kill();
     };
-  }, [start, kill]);
+  }, [start, kill, sigma]);
 
   useEffect(() => {
     registerEvents({
@@ -208,10 +221,14 @@ export default function GraphCanvas({
         const graph = new Graph();
         data.nodes.forEach((node: GraphNode) => {
           graph.addNode(node.id, {
-            x: (Math.random() - 0.5) * 1000,
-            y: (Math.random() - 0.5) * 1000,
+            // Placeholder position; the radial seed below assigns the
+            // real (x, y) once every node is added, using each node's
+            // degree as the centrality ranking.
+            x: 0,
+            y: 0,
             size: computeNodeSize(sizeFactor, node),
             label: node.label || node.id,
+            eventCount: node.eventCount ?? 0,
             color: (node.score ?? 0) > 0 ? "#10b981" : (node.score ?? 0) < 0 ? "#ef4444" : "#9ca3af",
           });
         });
@@ -224,6 +241,7 @@ export default function GraphCanvas({
             });
           }
         });
+        computeRadialSeed(graph);
         setGraph(graph);
       })
       .catch((fetchError) => {
